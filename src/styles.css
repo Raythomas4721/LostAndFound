@@ -1,0 +1,69 @@
+:root {
+  --bg: #0f1726;
+  --panel: #18233a;
+  --ink: #e9e2d0;
+  --muted: #9aa3b5;
+  --lamp: #f2c46d;
+  color-scheme: dark;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: 'Noto Serif TC', serif;
+  line-height: 1.8;
+}
+
+.placeholder {
+  max-width: 640px;
+  margin: 0 auto;
+  padding: 48px 16px;
+}
+
+.eyebrow {
+  color: var(--lamp);
+  letter-spacing: 0.2em;
+  margin: 0;
+}
+
+h1 {
+  margin: 0 0 32px;
+  font-size: 2.4rem;
+}
+
+.surface {
+  background: var(--panel);
+  border-left: 3px solid var(--lamp);
+  padding: 16px 20px;
+  border-radius: 4px;
+}
+
+.surface h2 {
+  margin-top: 0;
+  font-size: 1.2rem;
+  color: var(--lamp);
+}
+
+.line {
+  margin: 0.4em 0;
+}
+
+.narration {
+  color: var(--muted);
+}
+
+.who {
+  color: var(--lamp);
+  margin-right: 0.6em;
+}
+
+.note {
+  color: var(--muted);
+  font-size: 0.9rem;
+  margin-top: 24px;
+}
