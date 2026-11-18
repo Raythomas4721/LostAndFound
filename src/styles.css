@@ -841,3 +841,112 @@ h3 {
     white-space: normal;
   }
 }
+
+/* ── M2：大湯分頁、說謊與更正、結局 ── */
+.desk.no-ev {
+  grid-template-columns: minmax(240px, 1fr) minmax(320px, 2fr);
+}
+
+.soup-tabs {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 12px;
+  flex-wrap: wrap;
+}
+
+.soup-tabs button {
+  background: transparent;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 4px 16px;
+}
+
+.soup-tabs button.active {
+  background: var(--lamp);
+  border-color: var(--lamp);
+  color: #1d1606;
+  font-weight: 700;
+}
+
+.soup-note {
+  margin: 0;
+  padding: 8px 14px;
+  border-radius: 6px;
+  border: 1px dashed var(--line);
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+.pause {
+  color: var(--muted);
+  font-style: italic;
+}
+
+.say.lie {
+  color: var(--no);
+  font-weight: 700;
+}
+
+.fix-tag {
+  display: inline-block;
+  font-size: 0.72rem;
+  background: var(--no);
+  color: #1d1606;
+  border-radius: 3px;
+  padding: 0 5px;
+  margin-right: 6px;
+  vertical-align: 1px;
+}
+
+.ending {
+  max-width: 680px;
+  margin: 4vh auto 0;
+  border-left: 3px solid var(--lamp);
+}
+
+.ending h2 {
+  margin: 0;
+  font-size: 2rem;
+  color: var(--lamp);
+  letter-spacing: 0.15em;
+}
+
+.ending-summary {
+  font-size: 1.1rem;
+  margin: 8px 0 24px;
+}
+
+.epilogues,
+.soup-summary {
+  padding-left: 1.2em;
+}
+
+.epilogues li + li,
+.soup-summary li + li {
+  margin-top: 6px;
+}
+
+.soup-summary b {
+  color: var(--lamp);
+  font-weight: 400;
+}
+
+@media (max-width: 900px) {
+  .desk.no-ev {
+    grid-template-columns: 1fr;
+  }
+}
+
+.notebook li.struck {
+  text-decoration: line-through;
+  opacity: 0.6;
+}
+
+.nb-fix {
+  font-size: 0.72rem;
+  background: #a8432f;
+  color: #fff;
+  border-radius: 3px;
+  padding: 0 5px;
+  margin-right: 6px;
+}

@@ -27,8 +27,10 @@ export interface Question {
   unlocks?: string[];
   /** 要先有這些線索詞，這題才會出現 */
   requires?: string[];
-  /** 溫伯在說謊或迴避（只限大湯） */
+  /** 溫伯在說謊或迴避（只限大湯）。一定要有一題 corrects 指向它。 */
   hesitant?: boolean;
+  /** 這題是哪一題的更正。出現之後，原本那題就會被藏起來；原本那題問過的話，會自動重新回答。 */
+  corrects?: string;
 }
 
 export interface Hotspot {
@@ -90,15 +92,45 @@ export interface Choice {
   options: ChoiceOption[];
 }
 
-/** 喝完湯之後依序發生的事：一段對話，或一個選擇。 */
-export type Step = { kind: 'lines'; lines: Line[] } | { kind: 'choice'; choice: Choice };
+/**
+ * 依旗標決定要不要發生。所有欄位都要成立（AND）：
+ * all 全部有、any 至少一個有、none 全部沒有、atLeast 其中至少 n 個有、or 其中一個子條件成立。
+ */
+export interface Condition {
+  all?: string[];
+  any?: string[];
+  none?: string[];
+  atLeast?: { n: number; of: string[] };
+  or?: Condition[];
+}
+
+/** 喝完湯之後依序發生的事：一段對話，或一個選擇。when 不成立就跳過。 */
+export type Step = { kind: 'lines'; lines: Line[]; when?: Condition } | { kind: 'choice'; choice: Choice; when?: Condition };
 
 export interface Night {
   n: number;
   title: string;
   intro: Line[];
-  soup: Soup;
+  /** 沒有湯的晚上（例如第六晚），開場之後直接進入 after。 */
+  soup?: Soup;
   after: Step[];
   /** 這一晚結束時，筆記本大湯頁多出的線索 */
   bigClues?: string[];
+  /** 這一晚結束時，大湯解鎖的線索詞 */
+  bigUnlocks?: string[];
+}
+
+export interface Ending {
+  id: string;
+  title: string;
+  when: Condition;
+  /** 結局畫面上的一段話 */
+  summary: string;
+}
+
+export interface Epilogue {
+  id: string;
+  who: string;
+  when: Condition;
+  text: string;
 }

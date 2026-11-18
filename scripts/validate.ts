@@ -1,13 +1,14 @@
-// 檢查每一碗湯解不解得開。用法：npm run validate
+// 檢查每一碗湯解不解得開、每個結局走不走得到。用法：npm run validate
+import { ENDINGS, EPILOGUES } from '../src/content/endings';
 import { NIGHTS } from '../src/content/nights';
 import { validateNights } from '../src/engine/validate';
 
-const { reports, issues } = validateNights(NIGHTS);
+const { reports, issues, endingCounts } = validateNights(NIGHTS, ENDINGS, EPILOGUES);
 
-for (const [i, r] of reports.entries()) {
-  const soup = NIGHTS[i].soup;
-  const label = (id: string) => soup.questions.find((q) => q.id === id)?.text ?? id;
-  const head = `第${NIGHTS[i].n}晚「${r.title}」`;
+for (const r of reports) {
+  const night = NIGHTS.find((n) => n.soup?.id === r.soupId)!;
+  const label = (id: string) => night.soup!.questions.find((q) => q.id === id)?.text ?? id;
+  const head = `第${night.n}晚「${r.title}」${night.soup!.kind === 'big' ? '（大湯，算上前幾晚給的線索詞）' : ''}`;
   if (r.minQuestions === null) {
     console.log(`${head}：✘ 拿不齊推理板的答案`);
   } else {
@@ -15,6 +16,10 @@ for (const [i, r] of reports.entries()) {
     r.path.forEach((id, k) => console.log(`  ${k + 1}. ${label(id)}`));
   }
 }
+
+const total = Object.values(endingCounts).reduce((a, b) => a + b, 0);
+console.log(`\n所有選法共 ${total} 種，結局分布：`);
+for (const e of ENDINGS) console.log(`  ${e.title}：${endingCounts[e.id]} 種（${((endingCounts[e.id] / total) * 100).toFixed(0)}%）`);
 
 const errors = issues.filter((x) => x.level === 'error');
 const warns = issues.filter((x) => x.level === 'warn');

@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { ENDINGS, EPILOGUES } from '../src/content/endings';
 import { NIGHTS } from '../src/content/nights';
 import { night1 } from '../src/content/nights/night1';
 import { ask, availableQuestions, checkSentence, inspect, isSoupSolved, newSoupState, place, rate } from '../src/engine/soup';
@@ -6,11 +7,11 @@ import { hintQuestion, minQuestions } from '../src/engine/solver';
 import { validateNights, validateSoup } from '../src/engine/validate';
 import type { Soup } from '../src/engine/types';
 
-const soup = night1.soup;
+const soup = night1.soup!;
 
 describe('內容', () => {
   it('所有晚上都通過驗證，沒有錯誤', () => {
-    const { issues } = validateNights(NIGHTS);
+    const { issues } = validateNights(NIGHTS, ENDINGS, EPILOGUES);
     expect(issues.filter((x) => x.level === 'error')).toEqual([]);
   });
 

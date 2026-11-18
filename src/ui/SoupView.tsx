@@ -9,11 +9,14 @@ interface Props {
   state: SoupState;
   onChange: (state: SoupState) => void;
   onFinish: () => void;
+  /** false：推理板可以填，但不能喝完（大湯在第七晚之前） */
+  finishable?: boolean;
+  note?: string;
 }
 
 type Feedback = { sentenceId: string; ok: boolean } | null;
 
-export function SoupView({ soup, state, onChange, onFinish }: Props) {
+export function SoupView({ soup, state, onChange, onFinish, finishable = true, note }: Props) {
   const [selected, setSelected] = useState<string>(soup.start[0]);
   const [lastAsked, setLastAsked] = useState<string | null>(null);
   const [tea, setTea] = useState<Hint | null>(null);
@@ -66,6 +69,7 @@ export function SoupView({ soup, state, onChange, onFinish }: Props) {
 
   return (
     <div className="soup">
+      {note && <p className="soup-note">{note}</p>}
       <section className="panel surface">
         <button type="button" className="surface-toggle" onClick={() => setSurfaceOpen((o) => !o)} aria-expanded={surfaceOpen}>
           <span className="tag">湯面</span> {soup.title}
@@ -80,7 +84,7 @@ export function SoupView({ soup, state, onChange, onFinish }: Props) {
         )}
       </section>
 
-      <div className="desk">
+      <div className={`desk${soup.evidence.length === 0 ? ' no-ev' : ''}`}>
         <section className="panel keywords">
           <h3>線索詞</h3>
           {CATEGORIES.map((cat) => {
@@ -120,11 +124,14 @@ export function SoupView({ soup, state, onChange, onFinish }: Props) {
                 const asked = state.asked.includes(q.id);
                 return (
                   <li key={q.id}>
-                    <button type="button" className={`question${asked ? ' asked' : ''}${highlighted === q.id ? ' hinted' : ''}`} onClick={() => doAsk(q)} disabled={asked}>
-                      <span className="q-text">{q.text}</span>
+                    <button type="button" className={`question${asked ? ' asked' : ''}${highlighted === q.id ? ' hinted' : ''}${q.corrects ? ' corrected' : ''}`} onClick={() => doAsk(q)} disabled={asked}>
+                      <span className="q-text">
+                        {q.corrects && state.asked.includes(q.corrects) && <span className="fix-tag">更正</span>}
+                        {q.text}
+                      </span>
                       {asked && <ReplyBadge reply={q.reply} />}
                     </button>
-                    {asked && q.say && q.id !== lastAsked && <p className="say">「{q.say}」</p>}
+                    {asked && q.id !== lastAsked && <AnswerNotes q={q} state={state} />}
                   </li>
                 );
               })}
@@ -134,6 +141,7 @@ export function SoupView({ soup, state, onChange, onFinish }: Props) {
             <div className="answer" key={last.id}>
               <span className="who">溫伯</span>
               <ReplyBadge reply={last.reply} big />
+              {last.hesitant && <span className="pause">（他停頓了一下）</span>}
               {last.say && <span className="said">「{last.say}」</span>}
               {(last.unlocks ?? []).some((id) => !seen.has(id)) && (
                 <span className="unlock">新線索詞：{(last.unlocks ?? []).map((id) => kw.get(id)?.label).join('、')}</span>
@@ -142,7 +150,7 @@ export function SoupView({ soup, state, onChange, onFinish }: Props) {
           )}
         </section>
 
-        <section className="panel evidence">
+        <section className="panel evidence" hidden={soup.evidence.length === 0}>
           <h3>失物</h3>
           {soup.evidence.map((e) => (
             <div key={e.id} className={`ev-card${tea?.kind === 'inspect' ? ' hinted' : ''}`}>
@@ -222,7 +230,8 @@ export function SoupView({ soup, state, onChange, onFinish }: Props) {
             );
           })}
         </ol>
-        {solved && (
+        {solved && !finishable && <p className="finish muted">每一句都對了。剩下的，等第七晚再說。</p>}
+        {solved && finishable && (
           <div className="finish">
             <p>每一句都對了。</p>
             <button type="button" className="primary" onClick={onFinish}>
@@ -232,6 +241,18 @@ export function SoupView({ soup, state, onChange, onFinish }: Props) {
         )}
       </section>
     </div>
+  );
+}
+
+/** 問過的題目底下的小字：溫伯補的話、說謊的停頓、更正的標記。 */
+function AnswerNotes({ q, state }: { q: Question; state: SoupState }) {
+  const autoFixed = q.corrects && (state.auto ?? []).includes(q.id);
+  return (
+    <>
+      {q.hesitant && <p className="say pause">（他停頓了一下）</p>}
+      {autoFixed && <p className="say lie">他那時候說了謊。</p>}
+      {q.say && <p className="say">「{q.say}」</p>}
+    </>
   );
 }
 
@@ -247,7 +268,8 @@ function TeaLine({ hint, soup, kw }: { hint: Hint; soup: Soup; kw: Map<string, K
   else if (hint.kind === 'blank') {
     const n = soup.board.findIndex((s) => s.id === hint.sentenceId) + 1;
     text = `第 ${n} 句那一格，我會填「${kw.get(hint.keywordId)?.label}」。`;
-  } else text = '都對了。喝完吧。';
+  } else if (hint.kind === 'later') text = '這件事……還不到時候。過幾個晚上再問我吧。';
+  else text = '都對了。喝完吧。';
   return (
     <p className="tea-line">
       <span className="who">溫伯</span>

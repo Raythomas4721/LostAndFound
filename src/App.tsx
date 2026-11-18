@@ -1,11 +1,32 @@
 import { useEffect, useState } from 'react';
+import { ENDINGS, pickEpilogues } from './content/endings';
 import { NIGHTS } from './content/nights';
-import { advance, choose, currentNight, currentStep, finishIntro, finishReveal, finishSoup, newRun, setSoupState, soupState, type RunState } from './engine/run';
+import { matches } from './engine/conditions';
+import {
+  advance,
+  bigSoupOf,
+  choose,
+  currentNight,
+  currentStep,
+  finishIntro,
+  finishReveal,
+  finishSoup,
+  freeFor,
+  newRun,
+  pickEnding,
+  setSoupStateFor,
+  soupStateFor,
+  type RunState,
+} from './engine/run';
 import { minQuestions } from './engine/solver';
+import { askedCount } from './engine/soup';
+import type { Soup } from './engine/types';
 import { clearRun, loadRun, saveRun } from './save';
 import { Dialogue } from './ui/Dialogue';
 import { Notebook } from './ui/Notebook';
 import { SoupView } from './ui/SoupView';
+
+const BIG = bigSoupOf(NIGHTS);
 
 export function App() {
   const [saved] = useState(loadRun);
@@ -44,32 +65,58 @@ export function App() {
 
       <main className="stage">
         {run.phase === 'end' || !night ? (
-          <DemoEnd run={run} onRestart={restart} />
+          <EndingView run={run} onRestart={restart} />
         ) : run.phase === 'intro' ? (
-          <Dialogue key={`intro-${night.n}`} heading={night.title} lines={night.intro} doneLabel="開始值班" onDone={() => setRun(finishIntro(run, NIGHTS))} />
-        ) : run.phase === 'soup' ? (
-          <SoupView
-            key={night.soup.id}
-            soup={night.soup}
-            state={soupState(run, night)}
-            onChange={(s) => setRun((r) => (r ? setSoupState(r, night, s) : r))}
-            onFinish={() => setRun(finishSoup(run, NIGHTS))}
-          />
-        ) : run.phase === 'reveal' ? (
+          <Dialogue key={`intro-${night.n}`} heading={night.title} lines={night.intro} doneLabel={night.soup ? '開始值班' : '繼續'} onDone={() => setRun(finishIntro(run, NIGHTS))} />
+        ) : run.phase === 'soup' && night.soup ? (
+          <SoupPhase key={night.n} run={run} soup={night.soup} setRun={setRun} />
+        ) : run.phase === 'reveal' && night.soup ? (
           <Dialogue
             key={`reveal-${night.n}`}
             heading={`湯底・${night.soup.title}`}
             lines={night.soup.reveal}
             onDone={() => setRun(finishReveal(run, NIGHTS))}
-            footer={<RatingLine run={run} soupId={night.soup.id} best={minQuestions(night.soup)?.count ?? 0} />}
+            footer={<RatingLine run={run} soup={night.soup} />}
           />
         ) : (
           <AfterStep run={run} setRun={setRun} />
         )}
       </main>
 
-      {notebook && <Notebook run={run} nights={NIGHTS} onClose={() => setNotebook(false)} />}
+      {notebook && <Notebook run={run} nights={NIGHTS} big={BIG} onClose={() => setNotebook(false)} />}
     </div>
+  );
+}
+
+/** 小湯的晚上，第一晚之後可以切到大湯那一頁。 */
+function SoupPhase({ run, soup, setRun }: { run: RunState; soup: Soup; setRun: React.Dispatch<React.SetStateAction<RunState | null>> }) {
+  const [tab, setTab] = useState<'tonight' | 'big'>('tonight');
+  const bigOpen = BIG && soup.kind === 'small' && run.soups[BIG.id];
+  const shown = tab === 'big' && bigOpen ? BIG : soup;
+  const update = (s: Soup) => (state: ReturnType<typeof soupStateFor>) => setRun((r) => (r ? setSoupStateFor(r, s, state) : r));
+
+  return (
+    <>
+      {bigOpen && (
+        <div className="soup-tabs" role="tablist">
+          <button type="button" role="tab" aria-selected={tab === 'tonight'} className={tab === 'tonight' ? 'active' : ''} onClick={() => setTab('tonight')}>
+            今晚的湯：{soup.title}
+          </button>
+          <button type="button" role="tab" aria-selected={tab === 'big'} className={tab === 'big' ? 'active' : ''} onClick={() => setTab('big')}>
+            大湯：{BIG.title}
+          </button>
+        </div>
+      )}
+      <SoupView
+        key={shown.id}
+        soup={shown}
+        state={soupStateFor(run, shown)}
+        onChange={update(shown)}
+        onFinish={() => setRun(finishSoup(run, NIGHTS))}
+        finishable={shown === soup}
+        note={shown !== soup ? '大湯要到第七晚才喝得完。線索詞會一晚一晚多起來；現在可以先問、先填。' : undefined}
+      />
+    </>
   );
 }
 
@@ -94,11 +141,12 @@ function AfterStep({ run, setRun }: { run: RunState; setRun: (r: RunState) => vo
   return <Dialogue key={key} lines={step.lines} onDone={() => setRun(advance(run, NIGHTS))} />;
 }
 
-function RatingLine({ run, soupId, best }: { run: RunState; soupId: string; best: number }) {
-  const asked = run.soups[soupId]?.asked.length ?? 0;
+function RatingLine({ run, soup }: { run: RunState; soup: Soup }) {
+  const state = soupStateFor(run, soup);
+  const best = minQuestions(soup, freeFor(soup, NIGHTS))?.count ?? 0;
   return (
     <p className="rating-line">
-      問了 {asked} 題（最少 {best} 題）・<b>{run.ratings[soupId]}</b>
+      問了 {askedCount(state)} 題（最少 {best} 題）・<b>{run.ratings[soup.id]}</b>
     </p>
   );
 }
@@ -125,36 +173,49 @@ function Title({ hasSave, onContinue, onNew }: { hasSave: boolean; onContinue: (
           {hasSave ? '從第一晚重新開始' : '開始值班'}
         </button>
       </div>
-      <p className="muted small">試玩版：第一晚到第三晚</p>
+      <p className="muted small">七個晚上，約一小時</p>
     </main>
   );
 }
 
-function DemoEnd({ run, onRestart }: { run: RunState; onRestart: () => void }) {
-  const choices = NIGHTS.flatMap((n) => n.after.flatMap((s) => (s.kind === 'choice' ? [s.choice] : [])));
+function EndingView({ run, onRestart }: { run: RunState; onRestart: () => void }) {
+  const ending = pickEnding(ENDINGS, run.flags);
+  const [sceneDone, setSceneDone] = useState(false);
+  if (!ending) return null;
+  const sceneEnding = ENDINGS.find((e) => e.id === ending.id)!;
+  if (!sceneDone) return <Dialogue key={`ending-${ending.id}`} lines={sceneEnding.scene} doneLabel="……" onDone={() => setSceneDone(true)} />;
+
+  const epilogues = pickEpilogues(run.flags, matches);
+  const soups = NIGHTS.flatMap((n) => (n.soup ? [{ night: n, soup: n.soup }] : []));
   return (
-    <section className="panel demo-end">
-      <h2>試玩版到這裡</h2>
-      <p>第四晚，舊倉要清倉了。秋姨明天還會再來。</p>
-      <h3>這三碗湯</h3>
-      <ul>
-        {NIGHTS.map((n) => (
-          <li key={n.soup.id}>
-            {n.title}・{n.soup.title}：<b>{run.ratings[n.soup.id] ?? '—'}</b>（問了 {run.soups[n.soup.id]?.asked.length ?? 0} 題，喝了 {run.soups[n.soup.id]?.tea ?? 0} 杯茶）
+    <section className="panel ending">
+      <p className="eyebrow">結局</p>
+      <h2>{ending.title}</h2>
+      <p className="ending-summary">{ending.summary}</p>
+
+      <h3>後來</h3>
+      <ul className="epilogues">
+        {epilogues.map((ep) => (
+          <li key={ep.id}>
+            <span className="who">{ep.who}</span>
+            {ep.text}
           </li>
         ))}
       </ul>
-      <h3>你做的決定</h3>
-      <ul>
-        {choices.map((c) => {
-          const o = c.options.find((x) => x.id === run.choices[c.id]);
+
+      <h3>這一週的湯</h3>
+      <ul className="soup-summary">
+        {soups.map(({ night, soup }) => {
+          const s = run.soups[soup.id];
           return (
-            <li key={c.id}>
-              {c.prompt} <b>{o?.text ?? '—'}</b>
+            <li key={soup.id}>
+              {night.title}・{soup.title}：<b>{run.ratings[soup.id] ?? '—'}</b>（問了 {s ? askedCount(s) : 0} 題，喝了 {s?.tea ?? 0} 杯茶）
             </li>
           );
         })}
       </ul>
+
+      <p className="muted small">結局一共有 {ENDINGS.length} 種。換一種做法，秋姨的最後一晚會不一樣。</p>
       <button type="button" className="primary" onClick={onRestart}>
         從第一晚重新開始
       </button>

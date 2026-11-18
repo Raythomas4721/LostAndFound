@@ -6,6 +6,7 @@ export type Hint =
   | { kind: 'inspect' }
   | { kind: 'question'; questionId: string; topic: string }
   | { kind: 'blank'; sentenceId: string; blankId: string; keywordId: string }
+  | { kind: 'later' }
   | { kind: 'none' };
 
 /**
@@ -27,6 +28,8 @@ export function teaHint(soup: Soup, state: SoupState): Hint {
       if (needs.some((id) => !unlocked.has(id))) return { kind: 'inspect' };
       return { kind: 'question', questionId: qid, topic: q.topic };
     }
+    // 缺的線索詞要等之後的晚上才拿得到（大湯）
+    return { kind: 'later' };
   }
   for (const s of soup.board) {
     if (state.solved.includes(s.id)) continue;

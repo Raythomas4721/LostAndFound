@@ -1,27 +1,29 @@
-// 用「亂問、亂填、卡住就喝茶」的玩家跑整輪，看每碗湯平均要問幾題、喝幾杯茶。
+// 用「亂問、亂填、卡住就喝茶」的玩家跑整輪，看每碗湯平均要問幾題、喝幾杯茶，以及結局分布。
 // 用法：npm run simulate -- --runs 300
+import { ENDINGS } from '../src/content/endings';
 import { NIGHTS } from '../src/content/nights';
 import { teaHint } from '../src/engine/hints';
-import { advance, choose, currentStep, finishIntro, finishReveal, finishSoup, newRun, soupState, setSoupState, type RunState } from '../src/engine/run';
+import { advance, choose, currentStep, finishIntro, finishReveal, finishSoup, freeFor, newRun, pickEnding, setSoupStateFor, soupStateFor, type RunState } from '../src/engine/run';
 import { minQuestions } from '../src/engine/solver';
-import { ask, availableQuestions, checkSentence, inspect, isSoupSolved, place, type SoupState } from '../src/engine/soup';
-import type { Night } from '../src/engine/types';
+import { ask, askedCount, availableQuestions, checkSentence, inspect, isSoupSolved, place, type SoupState } from '../src/engine/soup';
+import type { Soup } from '../src/engine/types';
 
 const runsArg = process.argv.indexOf('--runs');
 const RUNS = runsArg >= 0 ? Number(process.argv[runsArg + 1]) : 300;
 const PATIENCE = 12; // 連續幾個動作沒進展就喝茶
 
 let seed = 20261118;
-const rand = () => ((seed = (seed * 1103515245 + 12345) % 2147483648) / 2147483648);
+const rand = () => (seed = (seed * 1103515245 + 12345) % 2147483648) / 2147483648;
 const pick = <T,>(xs: readonly T[]): T => xs[Math.floor(rand() * xs.length)];
 
-function playSoup(night: Night, start: SoupState): { state: SoupState; tea: number } {
-  const soup = night.soup;
+const progress = (s: SoupState) => s.asked.length + s.inspected.length + s.solved.length;
+
+function playSoup(soup: Soup, start: SoupState): { state: SoupState; tea: number } {
   let s = start;
   let tea = 0;
   let idle = 0;
-  for (let guard = 0; guard < 2000 && !isSoupSolved(soup, s); guard++) {
-    const before = JSON.stringify(s);
+  for (let guard = 0; guard < 3000 && !isSoupSolved(soup, s); guard++) {
+    const before = progress(s);
     if (idle >= PATIENCE) {
       idle = 0;
       tea++;
@@ -48,29 +50,30 @@ function playSoup(night: Night, start: SoupState): { state: SoupState; tea: numb
       }
       s = checkSentence(soup, s, sentence.id).state;
     }
-    // 只算「有新東西」才是進展；亂填錯的不算
-    const progressed = s.asked.length + s.inspected.length + s.solved.length > (JSON.parse(before) as SoupState).asked.length + (JSON.parse(before) as SoupState).inspected.length + (JSON.parse(before) as SoupState).solved.length;
-    idle = progressed ? 0 : idle + 1;
+    idle = progress(s) > before ? 0 : idle + 1;
   }
   return { state: s, tea };
 }
 
-const stats = NIGHTS.map(() => ({ asked: [] as number[], tea: [] as number[], unsolved: 0 }));
+const soupNights = NIGHTS.filter((n) => n.soup);
+const stats = new Map(soupNights.map((n) => [n.soup!.id, { asked: [] as number[], tea: [] as number[], unsolved: 0 }]));
 let finished = 0;
-const flagCounts = new Map<string, number>();
+const endingCounts = new Map<string, number>();
 
 for (let r = 0; r < RUNS; r++) {
   let run: RunState = newRun();
-  for (let guard = 0; guard < 500 && run.phase !== 'end'; guard++) {
+  for (let guard = 0; guard < 1000 && run.phase !== 'end'; guard++) {
     const night = NIGHTS[run.night];
     if (run.phase === 'intro') run = finishIntro(run, NIGHTS);
-    else if (run.phase === 'soup') {
-      const { state, tea } = playSoup(night, soupState(run, night));
-      run = setSoupState(run, night, state);
-      stats[run.night].asked.push(state.asked.length);
-      stats[run.night].tea.push(tea);
-      if (!isSoupSolved(night.soup, state)) {
-        stats[run.night].unsolved++;
+    else if (run.phase === 'soup' && night.soup) {
+      const soup = night.soup;
+      const { state, tea } = playSoup(soup, soupStateFor(run, soup));
+      run = setSoupStateFor(run, soup, state);
+      const st = stats.get(soup.id)!;
+      st.asked.push(askedCount(state));
+      st.tea.push(tea);
+      if (!isSoupSolved(soup, state)) {
+        st.unsolved++;
         break;
       }
       run = finishSoup(run, NIGHTS);
@@ -81,20 +84,24 @@ for (let r = 0; r < RUNS; r++) {
       else run = advance(run, NIGHTS);
     }
   }
-  if (run.phase === 'end') finished++;
-  for (const f of run.flags) flagCounts.set(f, (flagCounts.get(f) ?? 0) + 1);
+  if (run.phase === 'end') {
+    finished++;
+    const e = pickEnding(ENDINGS, run.flags);
+    endingCounts.set(e?.title ?? '（沒有結局）', (endingCounts.get(e?.title ?? '（沒有結局）') ?? 0) + 1);
+  }
 }
 
 const avg = (xs: number[]) => (xs.length ? xs.reduce((a, b) => a + b, 0) / xs.length : 0);
 console.log(`跑了 ${RUNS} 輪，走完 ${finished} 輪\n`);
-NIGHTS.forEach((night, i) => {
-  const s = stats[i];
-  const best = minQuestions(night.soup)?.count ?? 0;
+for (const night of soupNights) {
+  const soup = night.soup!;
+  const s = stats.get(soup.id)!;
+  const best = minQuestions(soup, freeFor(soup, NIGHTS))?.count ?? 0;
   console.log(
-    `第${night.n}晚「${night.soup.title}」：最少 ${best} 題｜亂問的玩家平均問 ${avg(s.asked).toFixed(1)} 題（共 ${night.soup.questions.length} 題）、喝 ${avg(s.tea).toFixed(1)} 杯茶｜沒喝完 ${s.unsolved} 輪`,
+    `第${night.n}晚「${soup.title}」：最少 ${best} 題｜亂問的玩家平均問 ${avg(s.asked).toFixed(1)} 題（共 ${soup.questions.length} 題）、喝 ${avg(s.tea).toFixed(1)} 杯茶｜沒喝完 ${s.unsolved} 輪`,
   );
-});
-console.log('\n旗標出現的比例：');
-for (const [f, n] of [...flagCounts].sort()) console.log(`  ${f}：${((n / RUNS) * 100).toFixed(0)}%`);
+}
+console.log('\n隨機選擇時的結局分布：');
+for (const [title, n] of endingCounts) console.log(`  ${title}：${((n / RUNS) * 100).toFixed(0)}%`);
 
-if (finished < RUNS) process.exit(1);
+if (finished < RUNS || endingCounts.has('（沒有結局）')) process.exit(1);

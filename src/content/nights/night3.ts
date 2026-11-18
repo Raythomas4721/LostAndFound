@@ -198,4 +198,5 @@ export const night3: Night = {
     '卓遠四十年前在第二月台拍過一張照片，傘後面站著一個女孩。',
     '秋姨說：「那天也是這樣的雨。」',
   ],
+  bigUnlocks: ['zhuoyuan', 'girl', 'ticket', 'platform2', 'hospital', 'lasttrain', 'forty'],
 };

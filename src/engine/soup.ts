@@ -10,6 +10,8 @@ export interface SoupState {
   /** 已經填對、鎖定的句子 id */
   solved: string[];
   tea: number;
+  /** 溫伯坦白後自動重新回答的題目 */
+  auto?: string[];
 }
 
 export function newSoupState(soup: Soup): SoupState {
@@ -27,9 +29,32 @@ export function isAvailable(q: Question, unlocked: readonly string[]): boolean {
   return unlocked.includes(q.topic) && (q.requires ?? []).every((id) => unlocked.includes(id));
 }
 
-/** 目前看得到的題目（含已經問過的）。 */
+/** 目前看得到的題目（含已經問過的）。被更正過的題目會換成更正後的版本。 */
 export function availableQuestions(soup: Soup, state: SoupState): Question[] {
-  return soup.questions.filter((q) => isAvailable(q, state.unlocked));
+  const open = soup.questions.filter((q) => isAvailable(q, state.unlocked));
+  const corrected = new Set(open.flatMap((q) => (q.corrects ? [q.corrects] : [])));
+  return open.filter((q) => !corrected.has(q.id));
+}
+
+/**
+ * 溫伯坦白之後：說謊的題目如果問過了，更正版自動重新回答一次（算是溫伯主動說的，不算玩家問的題數）。
+ * 回傳新的狀態，以及這次被更正的題目 id。
+ */
+export function applyCorrections(soup: Soup, state: SoupState): { state: SoupState; corrected: string[] } {
+  let next = state;
+  const corrected: string[] = [];
+  for (const q of soup.questions) {
+    if (!q.corrects || next.asked.includes(q.id) || !next.asked.includes(q.corrects) || !isAvailable(q, next.unlocked)) continue;
+    next = { ...next, asked: [...next.asked, q.id], auto: [...(next.auto ?? []), q.id], unlocked: addAll(next.unlocked, q.unlocks) };
+    corrected.push(q.id);
+  }
+  return { state: next, corrected };
+}
+
+/** 玩家自己問的題數（不含自動更正）。 */
+export function askedCount(state: SoupState): number {
+  const auto = new Set(state.auto ?? []);
+  return state.asked.filter((id) => !auto.has(id)).length;
 }
 
 export function inspect(soup: Soup, state: SoupState, hotspotId: string): SoupState {

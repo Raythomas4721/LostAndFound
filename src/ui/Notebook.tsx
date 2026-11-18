@@ -1,17 +1,20 @@
 import { useState } from 'react';
 import type { RunState } from '../engine/run';
-import type { Night } from '../engine/types';
+import type { SoupState } from '../engine/soup';
+import type { Night, Soup } from '../engine/types';
 
 interface Props {
   run: RunState;
   nights: readonly Night[];
+  big: Soup | null;
   onClose: () => void;
 }
 
-/** 筆記本：問過的題目（依晚分），以及大湯的線索。 */
-export function Notebook({ run, nights, onClose }: Props) {
+/** 筆記本：每碗小湯問過的題目，以及大湯的線索和問答。 */
+export function Notebook({ run, nights, big, onClose }: Props) {
   const [tab, setTab] = useState<'soups' | 'big'>('soups');
-  const played = nights.filter((n) => run.soups[n.soup.id]);
+  const played = nights.filter((n) => n.soup && n.soup.kind === 'small' && run.soups[n.soup.id]);
+  const bigState = big ? run.soups[big.id] : undefined;
 
   return (
     <div className="overlay" role="dialog" aria-modal="true" aria-label="筆記本" onClick={onClose}>
@@ -24,7 +27,7 @@ export function Notebook({ run, nights, onClose }: Props) {
         </div>
         <div className="tabs">
           <button type="button" className={tab === 'soups' ? 'active' : ''} onClick={() => setTab('soups')}>
-            問過的事
+            每晚的湯
           </button>
           <button type="button" className={tab === 'big' ? 'active' : ''} onClick={() => setTab('big')}>
             大湯：綠色鐵盒
@@ -34,44 +37,59 @@ export function Notebook({ run, nights, onClose }: Props) {
           played.length === 0 ? (
             <p className="muted">還沒有問過任何事。</p>
           ) : (
-            [...played].reverse().map((n) => {
-              const s = run.soups[n.soup.id];
-              return (
-                <div key={n.soup.id} className="nb-soup">
-                  <h3>
-                    {n.title}・{n.soup.title}
-                    {run.ratings[n.soup.id] && <span className="rating">{run.ratings[n.soup.id]}</span>}
-                  </h3>
-                  {s.asked.length === 0 ? (
-                    <p className="muted">還沒問。</p>
-                  ) : (
-                    <ul>
-                      {s.asked.map((id) => {
-                        const q = n.soup.questions.find((x) => x.id === id);
-                        if (!q) return null;
-                        return (
-                          <li key={id}>
-                            {q.text} <b>{q.reply}</b>
-                            {q.say && <span className="muted">「{q.say}」</span>}
-                          </li>
-                        );
-                      })}
-                    </ul>
-                  )}
-                </div>
-              );
-            })
+            [...played].reverse().map((n) => (
+              <div key={n.soup!.id} className="nb-soup">
+                <h3>
+                  {n.title}・{n.soup!.title}
+                  {run.ratings[n.soup!.id] && <span className="rating">{run.ratings[n.soup!.id]}</span>}
+                </h3>
+                <AskedList soup={n.soup!} state={run.soups[n.soup!.id]} />
+              </div>
+            ))
           )
         ) : run.bigClues.length === 0 ? (
           <p className="muted">第一晚結束時，這一頁才會打開。</p>
         ) : (
-          <ul className="big-clues">
-            {run.bigClues.map((c) => (
-              <li key={c}>{c}</li>
-            ))}
-          </ul>
+          <>
+            <div className="nb-soup">
+              <h3>線索</h3>
+              <ul className="big-clues">
+                {run.bigClues.map((c) => (
+                  <li key={c}>{c}</li>
+                ))}
+              </ul>
+            </div>
+            {big && bigState && (
+              <div className="nb-soup">
+                <h3>問過溫伯的事</h3>
+                <AskedList soup={big} state={bigState} />
+              </div>
+            )}
+          </>
         )}
       </div>
     </div>
+  );
+}
+
+function AskedList({ soup, state }: { soup: Soup; state: SoupState }) {
+  if (state.asked.length === 0) return <p className="muted">還沒問。</p>;
+  const correctedIds = new Set(state.asked.flatMap((id) => soup.questions.find((q) => q.id === id)?.corrects ?? []));
+  return (
+    <ul>
+      {state.asked.map((id) => {
+        const q = soup.questions.find((x) => x.id === id);
+        if (!q) return null;
+        const struck = correctedIds.has(q.id);
+        return (
+          <li key={id} className={struck ? 'struck' : ''}>
+            {q.corrects && state.asked.includes(q.corrects) && <span className="nb-fix">更正</span>}
+            {q.text} <b>{q.reply}</b>
+            {q.hesitant && <span className="muted">（他停頓了一下）</span>}
+            {q.say && <span className="muted">「{q.say}」</span>}
+          </li>
+        );
+      })}
+    </ul>
   );
 }

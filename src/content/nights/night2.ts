@@ -217,4 +217,5 @@ export const night2: Night = {
     },
   ],
   bigClues: ['鐵盒的蓋子上壓了一朵花。', '舊倉門口撿到一把鐵鑰匙，掛牌「乙-7」。溫伯說是他的「銅鑰匙」。'],
+  bigUnlocks: ['key', 'storeroom'],
 };
