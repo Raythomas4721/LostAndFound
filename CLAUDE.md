@@ -8,7 +8,7 @@
 
 - 回覆使用者一律用繁體中文。
 - 所有人名、地名、物品、文字都要原創，不借用現有作品。
-- commit 訊息用繁體中文。每做完一個功能就 commit（remote 設好之後再 push 到 `main`）。
+- commit 訊息用繁體中文。每做完一個功能就 commit 並 push 到 `main`（https://github.com/Raythomas4721/LostAndFound ，會自動部署到 GitHub Pages）。
 - 測試從簡：`npx tsc --noEmit -p .`、`npm run validate`、`npx vitest run`、`npm run simulate -- --runs 300`。
 - 不要安裝外部的 skill 或 plugin。
 - 目標是第一輪就好玩、容易走完；不會 game over，還錯東西只會讓故事轉彎。
