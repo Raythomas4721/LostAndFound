@@ -33,6 +33,8 @@ export interface Question {
 
 export interface Hotspot {
   id: string;
+  /** 按鈕上的短名稱，例如「傘柄」 */
+  name: string;
   /** 細看時看到的描述 */
   label: string;
   unlocks: string[];
@@ -78,6 +80,8 @@ export interface ChoiceOption {
   text: string;
   /** 選了之後立起來的旗標，給結局和尾聲用 */
   flag?: string;
+  /** 選了之後的回應 */
+  reply?: Line[];
 }
 
 export interface Choice {
@@ -86,12 +90,15 @@ export interface Choice {
   options: ChoiceOption[];
 }
 
+/** 喝完湯之後依序發生的事：一段對話，或一個選擇。 */
+export type Step = { kind: 'lines'; lines: Line[] } | { kind: 'choice'; choice: Choice };
+
 export interface Night {
   n: number;
   title: string;
   intro: Line[];
   soup: Soup;
-  afterSoup?: Line[];
-  choice?: Choice;
-  outro: Line[];
+  after: Step[];
+  /** 這一晚結束時，筆記本大湯頁多出的線索 */
+  bigClues?: string[];
 }

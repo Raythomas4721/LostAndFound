@@ -96,12 +96,19 @@ export function validateNights(nights: readonly Night[]): { reports: SoupReport[
   const issues: Issue[] = [];
   nights.forEach((night, i) => {
     if (night.n !== i + 1) issues.push({ level: 'error', where: `第${i + 1}晚`, message: `晚數編號是 ${night.n}，應該是 ${i + 1}` });
-    if (night.choice) {
-      const optIds = night.choice.options.map((o) => o.id);
-      if (optIds.length < 2) issues.push({ level: 'error', where: night.choice.id, message: '選擇至少要有兩個選項' });
-      if (new Set(optIds).size !== optIds.length) issues.push({ level: 'error', where: night.choice.id, message: '選項 id 重複' });
+    for (const step of night.after) {
+      if (step.kind !== 'choice') continue;
+      const { choice } = step;
+      const optIds = choice.options.map((o) => o.id);
+      if (optIds.length < 2) issues.push({ level: 'error', where: choice.id, message: '選擇至少要有兩個選項' });
+      if (new Set(optIds).size !== optIds.length) issues.push({ level: 'error', where: choice.id, message: '選項 id 重複' });
     }
   });
+  const choiceIds = nights.flatMap((n) => n.after.flatMap((s) => (s.kind === 'choice' ? [s.choice.id] : [])));
+  const dupChoices = choiceIds.filter((id, i) => choiceIds.indexOf(id) !== i);
+  if (dupChoices.length) issues.push({ level: 'error', where: '選擇', message: `選擇 id 重複：${dupChoices.join('、')}` });
+  const soupIds = nights.map((n) => n.soup.id);
+  if (new Set(soupIds).size !== soupIds.length) issues.push({ level: 'error', where: '湯', message: '湯的 id 重複' });
   const reports = nights.map((night) => validateSoup(night.soup, night.n));
   for (const r of reports) issues.push(...r.issues);
   return { reports, issues };

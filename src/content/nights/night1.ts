@@ -47,9 +47,9 @@ const soup: Soup = {
       name: '黑色長柄傘',
       description: '一把用了很多年的黑色長柄傘，木頭傘柄磨得發亮。',
       hotspots: [
-        { id: 'hs-carved', label: '木頭傘柄上刻了一個「秋」字，刻得很深。', unlocks: ['carved'] },
-        { id: 'hs-rib', label: '有一根傘骨斷了，用膠帶纏過。', unlocks: ['rib'] },
-        { id: 'hs-tag', label: '拾獲標籤：第二月台，東側長椅。阿琴的字。', unlocks: ['platform'] },
+        { id: 'hs-carved', name: '傘柄', label: '木頭傘柄上刻了一個「秋」字，刻得很深。', unlocks: ['carved'] },
+        { id: 'hs-rib', name: '傘骨', label: '有一根傘骨斷了，用膠帶纏過。', unlocks: ['rib'] },
+        { id: 'hs-tag', name: '拾獲標籤', label: '拾獲標籤：第二月台，東側長椅。阿琴的字。', unlocks: ['platform'] },
       ],
     },
   ],
@@ -140,25 +140,51 @@ export const night1: Night = {
     { who: 溫伯, text: '最後一個禮拜了，你運氣好，不會太忙。' },
   ],
   soup,
-  choice: {
-    id: 'c-call',
-    prompt: '明天打電話給老潘的時候，你要說：',
-    options: [
-      { id: 'as-asked', text: '「有人撿到一把傘。」' },
-      { id: 'promise', text: '「有人撿到一把傘。還有，停駛以後，我也會每天打給你。」', flag: 'promisedPan' },
-    ],
-  },
-  outro: [
-    { text: '23:00，一位穿深色外套的老太太推門進來，頭髮梳得很整齊。' },
-    { who: 秋姨, text: '請問，有沒有一只綠色的鐵盒？上面寫的是我的名字，何秋棠。' },
-    { text: '你看了看架上。' },
-    { who: 你, text: '……沒有。' },
-    { who: 秋姨, text: '這樣啊。那我明天再來。' },
-    { text: '她點點頭，好像早就知道。' },
-    { text: '她走了以後，溫伯說：' },
-    { who: 溫伯, text: '她每天晚上都會來。你就說還沒到。' },
-    { who: 你, text: '她來了多久了？' },
-    { who: 溫伯, text: '……四十年。' },
-    { text: '筆記本多了一頁：大湯　四十年來，她每天晚上都到車站問同一個東西。' },
+  after: [
+    {
+      kind: 'choice',
+      choice: {
+        id: 'c-call',
+        prompt: '明天打電話給老潘的時候，你要說：',
+        options: [
+          {
+            id: 'as-asked',
+            text: '「有人撿到一把傘。」',
+            reply: [{ who: 溫伯, text: '好。就這樣說。' }],
+          },
+          {
+            id: 'promise',
+            text: '「有人撿到一把傘。還有，停駛以後，我也會每天打給你。」',
+            flag: 'promisedPan',
+            reply: [
+              { text: '溫伯看了你一眼。' },
+              { who: 溫伯, text: '停駛以後就沒有招領處了。' },
+              { who: 你, text: '電話還在。' },
+              { text: '他沒說話，把茶杯推過來，替你也倒了一杯。' },
+            ],
+          },
+        ],
+      },
+    },
+    {
+      kind: 'lines',
+      lines: [
+        { text: '23:00，一位穿深色外套的老太太推門進來，頭髮梳得很整齊。' },
+        { who: 秋姨, text: '請問，有沒有一只綠色的鐵盒？上面寫的是我的名字，何秋棠。' },
+        { text: '你看了看架上。' },
+        { who: 你, text: '……沒有。' },
+        { who: 秋姨, text: '這樣啊。那我明天再來。' },
+        { text: '她點點頭，好像早就知道。' },
+        { text: '她走了以後，溫伯說：' },
+        { who: 溫伯, text: '她每天晚上都會來。你就說還沒到。' },
+        { who: 你, text: '她來了多久了？' },
+        { who: 溫伯, text: '……四十年。' },
+      ],
+    },
+  ],
+  bigClues: [
+    '湯面：四十年來，她每天晚上都到車站問同一個東西。',
+    '她叫何秋棠，要找一只綠色的鐵盒，上面寫著她的名字。',
+    '溫伯說：「你就說還沒到。」',
   ],
 };
