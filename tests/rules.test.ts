@@ -7,6 +7,8 @@ import { school } from '../src/content/school';
 import { night1 as schoolNight1 } from '../src/content/school/night1';
 import { askWith, battery, callBack, callLeft, canConfront, confront, hungUp, inspectWith } from '../src/engine/rules';
 import { ask, availableQuestions, newSoupState } from '../src/engine/soup';
+import { validateSoup } from '../src/engine/validate';
+import { night1 as barNight1 } from '../src/content/bar/night1';
 
 describe('限時來電（電台）', () => {
   const soup = radioNight1.soup!;
@@ -87,5 +89,24 @@ describe('手電筒（最後一屆）', () => {
     s = { ...s, tea: s.tea + 1 };
     expect(battery(soup, s, rules)).toBe(1);
     expect(inspectWith(soup, s, spots[2].id, rules).inspected).toContain(spots[2].id);
+  });
+});
+
+describe('證人（雙人座）', () => {
+  const soup = barNight1.soup!;
+
+  it('每句謊話，同一句話都有人說真話，而且謊話不解鎖線索詞', () => {
+    const lies = soup.questions.filter((q) => q.lie);
+    expect(lies.length).toBeGreaterThan(0);
+    for (const q of lies) {
+      expect(q.unlocks ?? []).toEqual([]);
+      expect(soup.questions.some((x) => x.text === q.text && !x.lie && x.reply !== q.reply)).toBe(true);
+    }
+  });
+
+  it('沒有真話對照的謊話，驗證會報錯', () => {
+    const broken = { ...soup, questions: soup.questions.filter((q) => !(q.text === '吧台的男人和安安認識嗎？' && !q.lie)) };
+    const report = validateSoup(broken, 1);
+    expect(report.issues.some((i) => i.level === 'error' && i.message.includes('拆不穿'))).toBe(true);
   });
 });

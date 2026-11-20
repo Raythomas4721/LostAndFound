@@ -100,6 +100,20 @@
   --glow: #2b3238;
 }
 
+/* 愛情：小酒館「半杯」，酒紅裡一點琥珀 */
+[data-theme='bar'] {
+  --bg: #140d10;
+  --bg2: #1a1115;
+  --panel: #20141a;
+  --panel2: #2b1b22;
+  --line: #3e2731;
+  --ink: #f0e2dc;
+  --muted: #b0989e;
+  --lamp: #e8a96a;
+  --lamp-dim: rgba(232, 169, 106, 0.14);
+  --glow: #3a1a24;
+}
+
 * {
   box-sizing: border-box;
 }
@@ -1410,4 +1424,91 @@ button.story-card:focus-visible {
   font-family: ui-monospace, 'Consolas', monospace;
   font-size: 0.85rem;
   letter-spacing: 0.05em;
+}
+
+/* ── 證人規則：同一句話問不同的人 ── */
+.q-group {
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  padding: 7px 10px 6px;
+  background: var(--panel2);
+}
+
+.q-group.hinted {
+  border-color: var(--lamp);
+  box-shadow: 0 0 0 2px var(--lamp-dim);
+}
+
+.q-group .q-text {
+  margin: 0 0 6px;
+}
+
+.clash {
+  margin-left: 8px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--lamp);
+  white-space: nowrap;
+}
+
+.witnesses {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.witness {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 34px;
+  padding: 3px 10px;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  background: var(--panel);
+  font-size: 0.88rem;
+}
+
+.witness:not(:disabled):hover {
+  border-color: var(--lamp);
+}
+
+.witness.asked {
+  background: transparent;
+  color: var(--ink);
+}
+
+.witness.hinted {
+  border-color: var(--lamp);
+  animation: glow 1.4s ease-in-out infinite alternate;
+}
+
+.lies-heard {
+  margin-top: 14px;
+  border-top: 1px dashed var(--line);
+  padding-top: 10px;
+}
+
+.lies-heard h3 {
+  font-size: 0.95rem;
+  margin: 0 0 6px;
+}
+
+.lies-heard ul {
+  margin: 0;
+  padding-left: 18px;
+  font-size: 0.9rem;
+}
+
+.lies-heard li {
+  margin: 3px 0;
+}
+
+.lies-heard li.missed {
+  opacity: 0.55;
+}
+
+.lies-heard .truth {
+  margin-left: 6px;
+  color: var(--lamp);
 }

@@ -33,6 +33,10 @@ export interface Question {
   corrects?: string;
   /** 對質規則：說謊的題目，玩家手上有這些線索詞時，可以當場拆穿 */
   contradictedBy?: string[];
+  /** 證人規則：這題是問誰（StoryRules.witnesses.people 的 id）；沒寫就是主持人回答 */
+  who?: string;
+  /** 證人規則：這個人在說謊。同一個線索詞底下一定要有同一句話、說真話的另一個人。 */
+  lie?: boolean;
 }
 
 export interface Hotspot {
@@ -85,6 +89,8 @@ export interface Soup {
   reveal: Line[];
   /** 限時來電規則：這碗湯是誰打進來的。有寫才會計算通話題數。 */
   caller?: string;
+  /** 證人規則：這碗湯裡，某些證人還不能叫名字（例如「吧台的男人」） */
+  witnessNames?: Record<string, string>;
 }
 
 export interface ChoiceOption {
@@ -150,10 +156,10 @@ export interface Epilogue {
 }
 
 /** 背景環境音：雨、收音機的雜訊、颱風、夜裡空教室的風和鐘。 */
-export type Ambience = 'rain' | 'static' | 'storm' | 'school' | 'hum';
+export type Ambience = 'rain' | 'static' | 'storm' | 'school' | 'hum' | 'bar';
 
 /** 湯本的類型：決定首頁的分類和配色基調。 */
-export type Genre = '溫馨' | '怪奇' | '驚悚' | '恐怖' | '懸疑';
+export type Genre = '溫馨' | '怪奇' | '驚悚' | '恐怖' | '懸疑' | '愛情';
 
 /**
  * 介面上跟著湯本換的字：誰回答你、提示叫什麼、失物叫什麼。
@@ -213,6 +219,7 @@ export interface Story {
  * - confront：大湯裡的謊話，手上有 contradictedBy 的線索詞時可以當場對質拆穿
  * - flashlight：證物一開始是黑的，手電筒每碗只夠照幾個地方；每用一次提示，補一格電
  * - timeline：推理板畫成時間軸，句子前面標著 Sentence.time
+ * - witnesses：同一句話可以問好幾個人（Question.who），各說各話；有人說謊（Question.lie）
  */
 export interface StoryRules {
   call?: { length: number; hangup: string; callback: string };
@@ -220,6 +227,8 @@ export interface StoryRules {
   flashlight?: { battery: number; empty: string; refill: string };
   /** 推理板畫成監視器時間軸：每一句前面標著時間 */
   timeline?: { label: string };
+  /** 證人：同一個問題問不同的人，回答可能對不上。湯底揭曉時，列出玩家聽到的謊話。 */
+  witnesses?: { people: { id: string; name: string }[]; tip: string; clash: string; liesHeading: string };
 }
 
 /** 還沒開張的湯本：首頁先擺一張卡。 */

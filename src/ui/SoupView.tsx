@@ -39,6 +39,11 @@ export function SoupView({ soup, voice, rules, state, onChange, onFinish, finish
   const left = callLeft(soup, state, rules);
   const hungUp = left === 0;
   const bat = battery(soup, state, rules);
+  const people = rules?.witnesses?.people;
+  /** 證人規則：誰回答這一題 */
+  const answerer = (q: Question) => (q.who ? (soup.witnessNames?.[q.who] ?? people?.find((p) => p.id === q.who)?.name ?? q.who) : voice.host);
+  // 證人規則：同一句話問不同的人，排成一組
+  const groups = people ? groupByText(questions) : null;
 
   const selectKeyword = (id: string) => {
     setSelected(id);
@@ -158,7 +163,10 @@ export function SoupView({ soup, voice, rules, state, onChange, onFinish, finish
         </section>
 
         <section className="panel ask">
-          <h3>問{voice.host}：關於「{kw.get(selected)?.label}」</h3>
+          <h3>
+            {people ? '問問看' : `問${voice.host}`}：關於「{kw.get(selected)?.label}」
+          </h3>
+          {rules?.witnesses && <p className="rule-tip">{rules.witnesses.tip}</p>}
           {left !== null && !hungUp && (
             <p className="call-meter">
               📞 {soup.caller}還在線上：這通還能問 <b>{left}</b> 題
@@ -175,6 +183,45 @@ export function SoupView({ soup, voice, rules, state, onChange, onFinish, finish
           {rules?.confront && soup.kind === 'big' && <p className="rule-tip">{rules.confront.tip}</p>}
           {questions.length === 0 ? (
             <p className="muted">這個線索詞底下暫時沒有可以問的。</p>
+          ) : groups ? (
+            <ul className="questions">
+              {groups.map((group) => {
+                const heard = group.filter((q) => state.asked.includes(q.id));
+                const clash = new Set(heard.map((q) => q.reply)).size > 1;
+                return (
+                  <li key={group[0].id} className={`q-group${group.some((q) => q.id === highlighted) ? ' hinted' : ''}`}>
+                    <p className="q-text">
+                      {group[0].text}
+                      {clash && <span className="clash">⚡ {rules?.witnesses?.clash}</span>}
+                    </p>
+                    <div className="witnesses">
+                      {group.map((q) => {
+                        const asked = state.asked.includes(q.id);
+                        return (
+                          <button
+                            type="button"
+                            key={q.id}
+                            className={`witness${asked ? ' asked' : ''}${highlighted === q.id ? ' hinted' : ''}`}
+                            onClick={() => doAsk(q)}
+                            disabled={asked}
+                          >
+                            <span className="w-name">{asked ? answerer(q) : `問${answerer(q)}`}</span>
+                            {asked && <ReplyBadge reply={q.reply} />}
+                          </button>
+                        );
+                      })}
+                    </div>
+                    {heard
+                      .filter((q) => q.say && q.id !== lastAsked)
+                      .map((q) => (
+                        <p key={q.id} className="say">
+                          {answerer(q)}：「{q.say}」
+                        </p>
+                      ))}
+                  </li>
+                );
+              })}
+            </ul>
           ) : (
             <ul className="questions">
               {questions.map((q) => {
@@ -207,7 +254,7 @@ export function SoupView({ soup, voice, rules, state, onChange, onFinish, finish
           )}
           {last && (
             <div className="answer" key={last.id}>
-              <span className="who">{voice.host}</span>
+              <span className="who">{answerer(last)}</span>
               <ReplyBadge reply={last.reply} big />
               {last.hesitant && <span className="pause">（{voice.hostPronoun}停頓了一下）</span>}
               {last.say && <span className="said">「{last.say}」</span>}
@@ -278,7 +325,7 @@ export function SoupView({ soup, voice, rules, state, onChange, onFinish, finish
             {voice.hint.icon} {voice.hint.label}{state.tea > 0 ? `（${state.tea}）` : ''}
           </button>
         </div>
-        {tea && <TeaLine hint={tea} soup={soup} kw={kw} voice={voice} extra={bat !== null ? rules?.flashlight?.refill : undefined} />}
+        {tea && <TeaLine hint={tea} soup={soup} kw={kw} voice={voice} extra={bat !== null ? rules?.flashlight?.refill : undefined} answerer={answerer} />}
         <ol className={`sentences${rules?.timeline ? ' timeline' : ''}`}>
           {soup.board.map((s) => {
             const done = state.solved.includes(s.id);
@@ -348,6 +395,13 @@ export function SoupView({ soup, voice, rules, state, onChange, onFinish, finish
   );
 }
 
+/** 同一句話的題目排成一組，照第一次出現的順序。 */
+function groupByText(questions: Question[]): Question[][] {
+  const map = new Map<string, Question[]>();
+  for (const q of questions) map.set(q.text, [...(map.get(q.text) ?? []), q]);
+  return [...map.values()];
+}
+
 /** 問過的題目底下的小字：主持人補的話、說謊的停頓、更正的標記。 */
 function AnswerNotes({ q, state, voice }: { q: Question; state: SoupState; voice: StoryVoice }) {
   const autoFixed = q.corrects && (state.auto ?? []).includes(q.id);
@@ -365,10 +419,13 @@ function ReplyBadge({ reply, big }: { reply: Question['reply']; big?: boolean })
   return <span className={`reply ${cls}${big ? ' big' : ''}`}>{reply}</span>;
 }
 
-function TeaLine({ hint, soup, kw, voice, extra }: { hint: Hint; soup: Soup; kw: Map<string, Keyword>; voice: StoryVoice; extra?: string }) {
+function TeaLine({ hint, soup, kw, voice, extra, answerer }: { hint: Hint; soup: Soup; kw: Map<string, Keyword>; voice: StoryVoice; extra?: string; answerer: (q: Question) => string }) {
   let text: string;
   if (hint.kind === 'inspect') text = voice.hintLines.inspect;
-  else if (hint.kind === 'question') text = `要不要問問看：「${soup.questions.find((q) => q.id === hint.questionId)?.text}」`;
+  else if (hint.kind === 'question') {
+    const q = soup.questions.find((x) => x.id === hint.questionId)!;
+    text = `要不要問問看：「${q.text}」${q.who ? `（問${answerer(q)}）` : ''}`;
+  }
   else if (hint.kind === 'blank') {
     const n = soup.board.findIndex((s) => s.id === hint.sentenceId) + 1;
     text = `第 ${n} 句那一格，我會填「${kw.get(hint.keywordId)?.label}」。`;

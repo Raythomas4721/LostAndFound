@@ -55,6 +55,12 @@ export function validateSoup(soup: Soup, nightNumber: number, free: readonly str
       if ((q.unlocks ?? []).length > 0) err(`題目 ${q.id} 是謊話，不能解鎖線索詞`);
       if (!soup.questions.some((x) => x.corrects === q.id)) err(`題目 ${q.id} 是謊話，卻沒有更正版（corrects）`);
     }
+    if (q.lie) {
+      if (!q.who) err(`題目 ${q.id} 標了 lie，但沒有寫是誰說的（who）`);
+      if ((q.unlocks ?? []).length > 0) err(`題目 ${q.id} 是證人的謊話，不能解鎖線索詞`);
+      const truth = soup.questions.find((x) => x.id !== q.id && x.topic === q.topic && x.text === q.text && !x.lie && x.reply !== q.reply);
+      if (!truth) err(`題目 ${q.id} 是謊話，同一個線索詞底下卻沒有同一句話、回答不一樣的真話，玩家拆不穿`);
+    }
     if (q.corrects) {
       const target = soup.questions.find((x) => x.id === q.corrects);
       if (!target) err(`題目 ${q.id} 更正的「${q.corrects}」不存在`);
@@ -231,5 +237,12 @@ export function validateRules(nights: readonly Night[], reports: readonly SoupRe
   if (rules?.flashlight && rules.flashlight.battery < 1) err('手電筒', '電池至少要一格');
   if (rules?.timeline) for (const n of nights) for (const s of n.soup?.board ?? []) if (!s.time) warn(n.soup!.id, '時間軸的句子 ' + s.id + ' 沒有標時間');
   if (rules?.call && rules.call.length < 1) err('限時來電', '一通電話至少要能問一題');
+  const people = new Set((rules?.witnesses?.people ?? []).map((p) => p.id));
+  for (const n of nights)
+    for (const q of n.soup?.questions ?? []) {
+      if (!q.who) continue;
+      if (!rules?.witnesses) err(n.soup!.id, `題目 ${q.id} 寫了 who，但這本湯本沒有開證人規則`);
+      else if (!people.has(q.who)) err(n.soup!.id, `題目 ${q.id} 的 who「${q.who}」不在證人名單裡`);
+    }
   return issues;
 }

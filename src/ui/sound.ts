@@ -149,6 +149,18 @@ function tickBuffer(c: AudioContext): AudioBuffer {
   return buf;
 }
 
+/** 七秒的循環：遠遠的兩三聲玻璃杯輕碰。 */
+function clinkBuffer(c: AudioContext): AudioBuffer {
+  const buf = c.createBuffer(1, c.sampleRate * 7, c.sampleRate);
+  const data = buf.getChannelData(0);
+  for (const [at, freq] of [[0.6, 2630], [0.75, 3110], [4.2, 2890]] as const) {
+    const start = Math.floor(c.sampleRate * at);
+    const len = Math.floor(c.sampleRate * 0.5);
+    for (let i = 0; i < len; i++) data[start + i] += Math.sin((2 * Math.PI * freq * i) / c.sampleRate) * Math.exp(-i / (c.sampleRate * 0.07)) * 0.35;
+  }
+  return buf;
+}
+
 function filtered(c: AudioContext, src: AudioNode, type: BiquadFilterType, freq: number, q = 0.7): BiquadFilterNode {
   const f = c.createBiquadFilter();
   f.type = type;
@@ -172,6 +184,7 @@ function loop(c: AudioContext, buffer: AudioBuffer): AudioBufferSourceNode {
  * - storm：大雨加上忽大忽小的風（民宿）
  * - school：空教室的低風聲和時鐘滴答（最後一屆）
  * - hum：警衛室的日光燈嗡嗡聲和機房風扇（十二樓沒有人）
+ * - bar：小酒館裡低低的人聲，偶爾玻璃杯輕碰（雙人座）
  */
 function startAmbience(kind: Ambience) {
   if (muted) return;
@@ -228,6 +241,21 @@ function startAmbience(kind: Ambience) {
     fanGain.gain.value = 0.25;
     filtered(c, fan, 'bandpass', 700, 0.8).connect(fanGain).connect(gain);
     sources.push(hum, fan);
+  }
+  if (kind === 'bar') {
+    // 人聲：中低頻的噪音，音量慢慢起伏，像隔了幾桌的聊天
+    const talk = loop(c, noiseBuffer(c, 4));
+    const talkGain = c.createGain();
+    talkGain.gain.value = 0.45;
+    const lfo = c.createOscillator();
+    lfo.frequency.value = 0.23;
+    const depth = c.createGain();
+    depth.gain.value = 0.18;
+    lfo.connect(depth).connect(talkGain.gain);
+    filtered(c, filtered(c, talk, 'bandpass', 520, 0.9), 'lowpass', 900).connect(talkGain).connect(gain);
+    const clink = loop(c, clinkBuffer(c));
+    clink.connect(gain);
+    sources.push(talk, lfo, clink);
   }
   if (kind === 'static') {
     const hiss = loop(c, noiseBuffer(c, 3));

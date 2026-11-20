@@ -102,7 +102,12 @@ export function StoryGame({ story, onLeave }: { story: Story; onLeave: () => voi
             heading={`湯底・${night.soup.title}`}
             lines={night.soup.reveal}
             onDone={() => setRun(finishReveal(run, nights))}
-            footer={<RatingLine story={story} run={run} soup={night.soup} />}
+            footer={
+              <>
+                <LiesHeard story={story} run={run} soup={night.soup} />
+                <RatingLine story={story} run={run} soup={night.soup} />
+              </>
+            }
           />
         ) : (
           <AfterStep story={story} run={run} setRun={setRun} />
@@ -167,6 +172,34 @@ function AfterStep({ story, run, setRun }: { story: Story; run: RunState; setRun
     );
   }
   return <Dialogue key={key} lines={step.lines} onDone={() => setRun(advance(run, story.nights))} />;
+}
+
+/** 證人規則：湯底揭曉時，把這碗湯裡的謊話攤開來。 */
+function LiesHeard({ story, run, soup }: { story: Story; run: RunState; soup: Soup }) {
+  const w = story.rules?.witnesses;
+  const lies = soup.questions.filter((q) => q.lie);
+  if (!w || lies.length === 0) return null;
+  const state = soupStateFor(run, soup);
+  // 湯底揭曉了，就用真名（「吧台的男人」→ 阿哲）
+  const name = (id?: string) => (id ? (w.people.find((p) => p.id === id)?.name ?? id) : story.voice.host);
+  const heard = lies.filter((q) => state.asked.includes(q.id));
+  return (
+    <div className="lies-heard">
+      <h3>
+        {w.liesHeading}（聽到 {heard.length} / {lies.length} 句）
+      </h3>
+      <ul>
+        {lies.map((q) => {
+          const truth = soup.questions.find((x) => x.topic === q.topic && x.text === q.text && !x.lie && x.reply !== q.reply);
+          return (
+            <li key={q.id} className={state.asked.includes(q.id) ? 'heard' : 'missed'}>
+              <b>{name(q.who)}</b>說「{q.text}」——{q.reply}。<span className="truth">其實：{truth?.reply}</span>
+            </li>
+          );
+        })}
+      </ul>
+    </div>
+  );
 }
 
 function RatingLine({ story, run, soup }: { story: Story; run: RunState; soup: Soup }) {
