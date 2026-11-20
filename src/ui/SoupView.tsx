@@ -79,7 +79,8 @@ export function SoupView({ soup, voice, state, onChange, onFinish, finishable = 
     if (hint.kind === 'question') selectKeyword(hint.topic);
   };
 
-  const last = lastAsked ? soup.questions.find((q) => q.id === lastAsked) : null;
+  // 剛問完的回答只跟著它自己的線索詞：切到別的線索詞就收起來，切回來再出現。
+  const last = lastAsked ? soup.questions.find((q) => q.id === lastAsked && q.topic === selected) : null;
 
   return (
     <div className="soup">
