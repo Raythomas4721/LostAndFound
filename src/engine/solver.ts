@@ -1,9 +1,9 @@
 import { isAvailable } from './soup';
 import type { Soup } from './types';
 
-/** 不用問就拿得到的線索詞：起始的，加上所有細看得到的（細看免費）。 */
+/** 不用問就拿得到的線索詞：起始的、所有細看得到的（細看免費），加上插播送的。 */
 export function freeKeywords(soup: Soup): string[] {
-  const set = new Set(soup.start);
+  const set = new Set([...soup.start, ...(soup.twist?.unlocks ?? [])]);
   for (const e of soup.evidence) for (const h of e.hotspots) for (const id of h.unlocks) set.add(id);
   return [...set];
 }

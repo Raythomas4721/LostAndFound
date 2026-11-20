@@ -4,7 +4,10 @@ const 老鍾 = '老鍾';
 const 林太太 = '林太太';
 const 你 = '你';
 
-/** 第二夜：嬰兒監聽器裡的男人。其實是電台太強的訊號，那個男人就是老鍾自己。 */
+/**
+ * 第二夜：嬰兒監聽器裡的男人。其實是電台太強的訊號，那個男人就是老鍾自己。
+ * 插播：你以為喝完了，林太太又打來——監聽器裡換成一個年輕的聲音在問問題。那是你：麥克風從頭到尾都開著。
+ */
 const soup: Soup = {
   id: 'monitor',
   title: '監聽器裡的男人',
@@ -26,10 +29,12 @@ const soup: Soup = {
     { id: 'man', label: '監聽器裡的男人', category: '人物' },
     { id: 'zhong', label: '老鍾', category: '人物' },
     { id: 'dad', label: '小滿的爸爸', category: '人物' },
+    { id: 'you', label: '你', category: '人物' },
 
     { id: 'monitor', label: '嬰兒監聽器', category: '物品' },
     { id: 'phone', label: '電話', category: '物品' },
     { id: 'signal', label: '電台的訊號', category: '物品' },
+    { id: 'mic', label: '你的麥克風', category: '物品' },
 
     { id: 'room', label: '小滿的房間', category: '地點' },
     { id: 'hill', label: '山上', category: '地點' },
@@ -40,6 +45,7 @@ const soup: Soup = {
     { id: 'ghost', label: '鬧鬼', category: '事情' },
     { id: 'seareport', label: '海象報告', category: '事情' },
     { id: 'request', label: '打電話來點歌', category: '事情' },
+    { id: 'onair', label: '年輕的聲音', category: '事情' },
 
     { id: 'two', label: '兩點', category: '時間' },
     { id: 'lastnight', label: '昨天晚上', category: '時間' },
@@ -97,6 +103,11 @@ const soup: Soup = {
     // 電話、時間
     { id: 'q-p-lin', topic: 'phone', text: '林太太是第一次打電話來嗎？', reply: '是' },
     { id: 'q-two', topic: 'two', text: '兩點這個時間很重要嗎？', reply: '是', say: '兩點是海象報告的時間。', unlocks: ['seareport'] },
+    // 插播之後
+    { id: 'q-oa-mic', topic: 'onair', text: '我的麥克風一直開著嗎？', reply: '是', say: '從你坐下來，就沒關過。', unlocks: ['mic'] },
+    { id: 'q-oa-hear', topic: 'onair', text: '林太太也聽得到老鍾的回答嗎？', reply: '不是', say: '我用的是對講，不上廣播。她只聽得到你在問。' },
+    { id: 'q-oa-ghost', topic: 'onair', text: '那個年輕的聲音，是另一個鬼嗎？', reply: '不是', say: '你摸摸自己的喉嚨。' },
+    { id: 'q-oa-why', topic: 'mic', text: '老鍾是故意不提醒我關麥克風的嗎？', reply: '是', say: '小滿每天兩點都在聽。我想讓她聽聽看，有人在很認真地問她的事。' },
   ],
   board: [
     { id: 's1', text: '監聽器裡的男人，是{b1}。', blanks: [{ id: 'b1', category: '人物', answer: 'zhong' }] },
@@ -110,7 +121,21 @@ const soup: Soup = {
       ],
     },
     { id: 's4', text: '今晚會叫她的名字，是因為她{b5}。', blanks: [{ id: 'b5', category: '事情', answer: 'request' }] },
+    { id: 's5', twist: true, text: '林太太現在從監聽器裡聽到的年輕聲音，是{b6}。', blanks: [{ id: 'b6', category: '人物', answer: 'you' }] },
+    { id: 's6', twist: true, text: '因為{b7}一直開著，我問老鍾的每一句話，都播了出去。', blanks: [{ id: 'b7', category: '物品', answer: 'mic' }] },
   ],
+  twist: {
+    label: '插播',
+    lines: [
+      { text: '你正要放下耳機，熱線的燈又亮了。是林太太，聲音比剛才抖得更厲害。' },
+      { who: 林太太, text: '他又在說話了……可是不是那個男人。這次是一個年輕的聲音。' },
+      { who: 林太太, text: '他剛剛在問：「{last}」' },
+      { who: 林太太, text: '他在問誰？他到底在問誰？' },
+      { text: '你低下頭。面前那支麥克風，紅燈一直是亮的。' },
+    ],
+    surface: [{ text: '（插播）林太太又打來了：監聽器裡換成一個年輕的聲音，一句一句地在問問題。' }],
+    unlocks: ['onair', 'you'],
+  },
   reveal: [
     { who: 老鍾, text: '林家住在山腰，離電台的發射天線只有幾百公尺。' },
     { who: 老鍾, text: '我們的訊號……比一般的強。強到她家的嬰兒監聽器都收得到。' },
@@ -120,6 +145,8 @@ const soup: Soup = {
     { who: 老鍾, text: '你把紙條遞給我。我今天就叫了。' },
     { text: '他沉默了一下。' },
     { who: 老鍾, text: '她爸爸的船，收不到我們。' },
+    { text: '然後他指了指你的麥克風。' },
+    { who: 老鍾, text: '那個，是我故意沒提醒你的。小滿今晚聽了一整夜，有一個人在很認真地問她的事。' },
   ],
 };
 

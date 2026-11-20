@@ -17,6 +17,8 @@ export interface SoupState {
   calls?: number;
   /** 對質：被當場拆穿的謊話 id */
   confronted?: string[];
+  /** 插播：湯面已經翻轉 */
+  twisted?: boolean;
 }
 
 export function newSoupState(soup: Soup): SoupState {
@@ -100,7 +102,19 @@ export function place(soup: Soup, state: SoupState, blankId: string, keywordId: 
 
 export type SentenceResult = 'correct' | 'wrong' | 'incomplete';
 
-/** 句子的空格全部填好才檢查；填對就鎖定。填錯不說錯在哪一格。 */
+/** 推理板上目前看得到的句子：插播的句子要等湯面翻轉之後才出現。 */
+export function visibleBoard(soup: Soup, state: SoupState) {
+  return soup.board.filter((s) => !s.twist || state.twisted);
+}
+
+/** 插播：插播以外的句子全部填對時，湯面翻轉。新的一通電話，通話題數重算。 */
+function maybeTwist(soup: Soup, state: SoupState): SoupState {
+  if (!soup.twist || state.twisted) return state;
+  if (!soup.board.filter((s) => !s.twist).every((s) => state.solved.includes(s.id))) return state;
+  return { ...state, twisted: true, unlocked: addAll(state.unlocked, soup.twist.unlocks), ...(state.callAsked !== undefined ? { callAsked: 0 } : {}) };
+}
+
+/** 句子的空格全部填好才檢查；填對就鎖定（可能觸發插播）。填錯不說錯在哪一格。 */
 export function checkSentence(soup: Soup, state: SoupState, sentenceId: string): { state: SoupState; result: SentenceResult } {
   const sentence = soup.board.find((s) => s.id === sentenceId);
   if (!sentence) return { state, result: 'incomplete' };
@@ -108,7 +122,7 @@ export function checkSentence(soup: Soup, state: SoupState, sentenceId: string):
   if (sentence.blanks.some((b) => !state.placements[b.id])) return { state, result: 'incomplete' };
   const ok = sentence.blanks.every((b) => state.placements[b.id] === b.answer);
   if (!ok) return { state, result: 'wrong' };
-  return { state: { ...state, solved: [...state.solved, sentenceId] }, result: 'correct' };
+  return { state: maybeTwist(soup, { ...state, solved: [...state.solved, sentenceId] }), result: 'correct' };
 }
 
 export function isSoupSolved(soup: Soup, state: SoupState): boolean {

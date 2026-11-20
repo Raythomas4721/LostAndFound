@@ -2,10 +2,11 @@
 // 用法：npm run simulate -- --runs 300
 import { STORIES } from '../src/content/stories';
 import { teaHint } from '../src/engine/hints';
-import { advance, choose, currentStep, finishIntro, finishReveal, finishSoup, freeFor, newRun, pickEnding, setSoupStateFor, soupStateFor, type RunState } from '../src/engine/run';
+import { advance, answerReverse, choose, currentStep, finishIntro, finishReveal, finishSoup, freeFor, newRun, pickEnding, setSoupStateFor, soupStateFor, type RunState } from '../src/engine/run';
 import { minQuestions } from '../src/engine/solver';
 import { askWith, callBack, hungUp, inspectWith } from '../src/engine/rules';
-import { askedCount, availableQuestions, checkSentence, isSoupSolved, place, type SoupState } from '../src/engine/soup';
+import { askedCount, availableQuestions, checkSentence, isSoupSolved, place, visibleBoard, type SoupState } from '../src/engine/soup';
+import { reverseOptions } from '../src/engine/validate';
 import type { Soup, Story, StoryRules } from '../src/engine/types';
 
 const runsArg = process.argv.indexOf('--runs');
@@ -51,7 +52,7 @@ function playSoup(soup: Soup, start: SoupState, rules: StoryRules | undefined): 
     if (roll < 0.15 && uninspected.length) s = inspect(s, pick(uninspected).id);
     else if (roll < 0.65 && unasked.length) s = ask(s, pick(unasked).id);
     else {
-      const open = soup.board.filter((x) => !s.solved.includes(x.id));
+      const open = visibleBoard(soup, s).filter((x) => !s.solved.includes(x.id));
       const sentence = pick(open);
       for (const b of sentence.blanks) {
         const options = soup.keywords.filter((k) => k.category === b.category && s.unlocked.includes(k.id));
@@ -93,6 +94,7 @@ function simulate(story: Story): boolean {
       else if (run.phase === 'after') {
         const step = currentStep(run, NIGHTS);
         if (step?.kind === 'choice') run = choose(run, NIGHTS, pick(step.choice.options).id);
+        else if (step?.kind === 'reverse') run = answerReverse(run, NIGHTS, step.reverse.questions.map((q) => pick(reverseOptions(q))));
         else run = advance(run, NIGHTS);
       }
     }

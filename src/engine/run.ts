@@ -1,7 +1,7 @@
 import { matches } from './conditions';
 import { minQuestions } from './solver';
 import { applyCorrections, askedCount, isSoupSolved, newSoupState, rate, type Rating, type SoupState } from './soup';
-import type { Choice, Ending, Epilogue, Line, Night, Soup } from './types';
+import type { Choice, Ending, Epilogue, FakeEnd, Line, Night, Reply, Reverse, Soup } from './types';
 
 /**
  * 一晚的流程：intro（開場）→ soup（湯面＋調查＋推理板）→ reveal（湯底）
@@ -85,8 +85,15 @@ export function finishReveal(run: RunState, nights: readonly Night[]): RunState 
   return settleAfter({ ...run, phase: 'after', step: nextVisible(night, 0, run.flags), picked: null }, nights);
 }
 
+export type ShownStep =
+  | { kind: 'lines'; lines: Line[] }
+  | { kind: 'choice'; choice: Choice }
+  | { kind: 'reply'; lines: Line[] }
+  | { kind: 'reverse'; reverse: Reverse }
+  | { kind: 'fakeEnd'; fakeEnd: FakeEnd };
+
 /** 目前 after 階段要顯示的東西。 */
-export function currentStep(run: RunState, nights: readonly Night[]): { kind: 'lines'; lines: Line[] } | { kind: 'choice'; choice: Choice } | { kind: 'reply'; lines: Line[] } | null {
+export function currentStep(run: RunState, nights: readonly Night[]): ShownStep | null {
   const night = currentNight(run, nights);
   if (!night || run.phase !== 'after') return null;
   const step = night.after[run.step];
@@ -95,7 +102,24 @@ export function currentStep(run: RunState, nights: readonly Night[]): { kind: 'l
     const option = step.choice.options.find((o) => o.id === run.picked);
     return { kind: 'reply', lines: option?.reply ?? [] };
   }
+  if (step.kind === 'reverse') return { kind: 'reverse', reverse: step.reverse };
+  if (step.kind === 'fakeEnd') return { kind: 'fakeEnd', fakeEnd: step.fakeEnd };
   return step.kind === 'lines' ? { kind: 'lines', lines: step.lines } : { kind: 'choice', choice: step.choice };
+}
+
+/** 反過來問你，全部答完：每一題選的回答立起它的旗標，記下回答，然後前進。 */
+export function answerReverse(run: RunState, nights: readonly Night[], replies: readonly Reply[]): RunState {
+  const night = currentNight(run, nights);
+  const step = night?.after[run.step];
+  if (!night || run.phase !== 'after' || step?.kind !== 'reverse') return run;
+  const { reverse } = step;
+  if (replies.length !== reverse.questions.length) return run;
+  const flags = [...run.flags];
+  reverse.questions.forEach((q, i) => {
+    const f = q.on?.[replies[i]]?.flag;
+    if (f && !flags.includes(f)) flags.push(f);
+  });
+  return advance({ ...run, flags, choices: { ...run.choices, [reverse.id]: replies.join('|') } }, nights);
 }
 
 export function choose(run: RunState, nights: readonly Night[], optionId: string): RunState {
@@ -116,6 +140,7 @@ export function advance(run: RunState, nights: readonly Night[]): RunState {
   if (!night || run.phase !== 'after') return run;
   const step = night.after[run.step];
   if (step?.kind === 'choice' && !run.picked) return run; // 還沒選
+  if (step?.kind === 'reverse' && !(step.reverse.id in run.choices)) return run; // 還沒答完
   return settleAfter({ ...run, step: nextVisible(night, run.step + 1, run.flags), picked: null }, nights);
 }
 

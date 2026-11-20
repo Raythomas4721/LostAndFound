@@ -56,7 +56,7 @@ export type ConfrontResult = 'broken' | 'truthful' | 'noproof';
 
 /** 能不能對這一題提出對質：問過、不是更正版、還沒被拆穿、更正版還沒出現。 */
 export function canConfront(soup: Soup, state: SoupState, questionId: string, rules: StoryRules | undefined): boolean {
-  if (!rules?.confront || soup.kind !== 'big') return false;
+  if (!rules?.confront || (soup.kind !== 'big' && !soup.host)) return false;
   const q = soup.questions.find((x) => x.id === questionId);
   if (!q || q.corrects || !state.asked.includes(q.id)) return false;
   if ((state.confronted ?? []).includes(q.id)) return false;

@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
 import { teaHint, type Hint } from '../engine/hints';
 import { askWith, battery, callBack, callLeft, canConfront, confront, inspectWith } from '../engine/rules';
-import { availableQuestions, checkSentence, isSoupSolved, place, type SoupState } from '../engine/soup';
+import { availableQuestions, checkSentence, isSoupSolved, place, visibleBoard, type SoupState } from '../engine/soup';
 import { CATEGORIES, type Keyword, type Question, type Soup, type StoryRules, type StoryVoice } from '../engine/types';
 import { EvidenceArt, hasArt } from './art';
 import { LineView } from './Dialogue';
@@ -22,7 +22,11 @@ interface Props {
 
 type Feedback = { sentenceId: string; ok: boolean } | null;
 
-export function SoupView({ soup, voice, rules, state, onChange, onFinish, finishable = true, note }: Props) {
+export function SoupView({ soup, voice: storyVoice, rules, state, onChange, onFinish, finishable = true, note }: Props) {
+  // 換人回答的碗：回答的人、代名詞、對質的台詞都換掉
+  const voice: StoryVoice = soup.host ? { ...storyVoice, host: soup.host.name, hostPronoun: soup.host.pronoun } : storyVoice;
+  const confrontLines = rules?.confront ? { ...rules.confront, ...(soup.host?.confront ?? {}) } : undefined;
+  const [twistShown, setTwistShown] = useState<string | null>(null);
   const [selected, setSelected] = useState<string>(soup.start[0]);
   const [lastAsked, setLastAsked] = useState<string | null>(null);
   const [tea, setTea] = useState<Hint | null>(null);
@@ -30,7 +34,10 @@ export function SoupView({ soup, voice, rules, state, onChange, onFinish, finish
   const [feedback, setFeedback] = useState<Feedback>(null);
   const [surfaceOpen, setSurfaceOpen] = useState(state.asked.length === 0);
   const [seen, setSeen] = useState<Set<string>>(() => new Set(state.unlocked));
-  const [confrontMsg, setConfrontMsg] = useState<{ text: string; ok: boolean } | null>(null);
+  const [confrontMsg, setConfrontMsg] = useState<{
+    text: string;
+    ok: boolean;
+  } | null>(null);
 
   const kw = useMemo(() => new Map(soup.keywords.map((k) => [k.id, k])), [soup]);
   const solved = isSoupSolved(soup, state);
@@ -78,6 +85,14 @@ export function SoupView({ soup, voice, rules, state, onChange, onFinish, finish
     const result = checkSentence(soup, next, sentence.id);
     next = result.state;
     onChange(next);
+    if (!state.twisted && next.twisted && soup.twist) {
+      // 插播：{last} 換成玩家最後自己問的那一題
+      const mine = next.asked.filter((id) => !(next.auto ?? []).includes(id));
+      const lastQ = soup.questions.find((q) => q.id === mine[mine.length - 1]);
+      setTwistShown(lastQ?.text ?? '……');
+      setSurfaceOpen(true);
+      play('unlock');
+    }
     if (result.result !== 'incomplete') {
       setFeedback({ sentenceId: sentence.id, ok: result.result === 'correct' });
       play(result.result === 'correct' ? 'correct' : 'wrong');
@@ -97,10 +112,16 @@ export function SoupView({ soup, voice, rules, state, onChange, onFinish, finish
       const fix = soup.questions.find((x) => x.corrects === q.id);
       play('unlock');
       onChange(r.state);
-      setConfrontMsg({ ok: true, text: rules.confront.broken + (fix ? `「${fix.text}」${fix.reply}。${fix.say ?? ''}` : '') });
+      setConfrontMsg({
+        ok: true,
+        text: confrontLines!.broken + (fix ? `「${fix.text}」${fix.reply}。${fix.say ?? ''}` : ''),
+      });
     } else {
       play('wrong');
-      setConfrontMsg({ ok: false, text: r.result === 'truthful' ? rules.confront.truthful : rules.confront.noproof });
+      setConfrontMsg({
+        ok: false,
+        text: r.result === 'truthful' ? confrontLines!.truthful : confrontLines!.noproof,
+      });
     }
   };
 
@@ -118,6 +139,26 @@ export function SoupView({ soup, voice, rules, state, onChange, onFinish, finish
   return (
     <div className="soup">
       {note && <p className="soup-note">{note}</p>}
+      {soup.host && <p className="soup-note host-note">{soup.host.note}</p>}
+      {twistShown !== null && soup.twist && (
+        <div className="twist-overlay" role="dialog" aria-modal="true" aria-label={soup.twist.label}>
+          <section className="panel twist">
+            <p className="eyebrow">{soup.twist.label}</p>
+            {soup.twist.lines.map((line, i) => (
+              <LineView
+                key={i}
+                line={{
+                  ...line,
+                  text: line.text.replace('{last}', twistShown),
+                }}
+              />
+            ))}
+            <button type="button" className="primary" autoFocus onClick={() => setTwistShown(null)}>
+              繼續
+            </button>
+          </section>
+        </div>
+      )}
       <section className="panel surface">
         <button type="button" className="surface-toggle" onClick={() => setSurfaceOpen((o) => !o)} aria-expanded={surfaceOpen}>
           <span className="tag">湯面</span> {soup.title}
@@ -128,6 +169,12 @@ export function SoupView({ soup, voice, rules, state, onChange, onFinish, finish
             {soup.surface.map((line, i) => (
               <LineView key={i} line={line} />
             ))}
+            {state.twisted &&
+              soup.twist?.surface?.map((line, i) => (
+                <div key={`t${i}`} className="twist-line">
+                  <LineView line={line} />
+                </div>
+              ))}
           </div>
         )}
       </section>
@@ -164,7 +211,8 @@ export function SoupView({ soup, voice, rules, state, onChange, onFinish, finish
 
         <section className="panel ask">
           <h3>
-            {people ? '問問看' : `問${voice.host}`}：關於「{kw.get(selected)?.label}」
+            {people ? '問問看' : `問${voice.host}`}：關於「
+            {kw.get(selected)?.label}」
           </h3>
           {rules?.witnesses && <p className="rule-tip">{rules.witnesses.tip}</p>}
           {left !== null && !hungUp && (
@@ -198,13 +246,7 @@ export function SoupView({ soup, voice, rules, state, onChange, onFinish, finish
                       {group.map((q) => {
                         const asked = state.asked.includes(q.id);
                         return (
-                          <button
-                            type="button"
-                            key={q.id}
-                            className={`witness${asked ? ' asked' : ''}${highlighted === q.id ? ' hinted' : ''}`}
-                            onClick={() => doAsk(q)}
-                            disabled={asked}
-                          >
+                          <button type="button" key={q.id} className={`witness${asked ? ' asked' : ''}${highlighted === q.id ? ' hinted' : ''}`} onClick={() => doAsk(q)} disabled={asked}>
                             <span className="w-name">{asked ? answerer(q) : `問${answerer(q)}`}</span>
                             {asked && <ReplyBadge reply={q.reply} />}
                           </button>
@@ -228,7 +270,12 @@ export function SoupView({ soup, voice, rules, state, onChange, onFinish, finish
                 const asked = state.asked.includes(q.id);
                 return (
                   <li key={q.id}>
-                    <button type="button" className={`question${asked ? ' asked' : ''}${highlighted === q.id ? ' hinted' : ''}${q.corrects ? ' corrected' : ''}`} onClick={() => doAsk(q)} disabled={asked || hungUp}>
+                    <button
+                      type="button"
+                      className={`question${asked ? ' asked' : ''}${highlighted === q.id ? ' hinted' : ''}${q.corrects ? ' corrected' : ''}`}
+                      onClick={() => doAsk(q)}
+                      disabled={asked || hungUp}
+                    >
                       <span className="q-text">
                         {q.corrects && state.asked.includes(q.corrects) && <span className="fix-tag">更正</span>}
                         {q.text}
@@ -259,7 +306,10 @@ export function SoupView({ soup, voice, rules, state, onChange, onFinish, finish
               {last.hesitant && <span className="pause">（{voice.hostPronoun}停頓了一下）</span>}
               {last.say && <span className="said">「{last.say}」</span>}
               {(last.unlocks ?? []).some((id) => !seen.has(id)) && (
-                <span className="unlock">新線索詞：{(last.unlocks ?? []).map((id) => kw.get(id)?.label).join('、')}</span>
+                <span className="unlock">
+                  新線索詞：
+                  {(last.unlocks ?? []).map((id) => kw.get(id)?.label).join('、')}
+                </span>
               )}
             </div>
           )}
@@ -322,17 +372,18 @@ export function SoupView({ soup, voice, rules, state, onChange, onFinish, finish
         <div className="board-head">
           <h3>{rules?.timeline ? rules.timeline.label : '推理板：湯底'}</h3>
           <button type="button" className="tea" onClick={pourTea} disabled={solved}>
-            {voice.hint.icon} {voice.hint.label}{state.tea > 0 ? `（${state.tea}）` : ''}
+            {voice.hint.icon} {voice.hint.label}
+            {state.tea > 0 ? `（${state.tea}）` : ''}
           </button>
         </div>
         {tea && <TeaLine hint={tea} soup={soup} kw={kw} voice={voice} extra={bat !== null ? rules?.flashlight?.refill : undefined} answerer={answerer} />}
         <ol className={`sentences${rules?.timeline ? ' timeline' : ''}`}>
-          {soup.board.map((s) => {
+          {visibleBoard(soup, state).map((s) => {
             const done = state.solved.includes(s.id);
             const fb = feedback?.sentenceId === s.id ? feedback : null;
             const parts = s.text.split(/(\{\w+\})/);
             return (
-              <li key={s.id} className={`sentence${done ? ' done' : ''}${fb && !fb.ok ? ' wrong' : ''}`}>
+              <li key={s.id} className={`sentence${done ? ' done' : ''}${fb && !fb.ok ? ' wrong' : ''}${s.twist ? ' twisted' : ''}`}>
                 {rules?.timeline && s.time && <span className="tl-time">{s.time}</span>}
                 {parts.map((part, i) => {
                   const m = part.match(/^\{(\w+)\}$/);
@@ -425,8 +476,7 @@ function TeaLine({ hint, soup, kw, voice, extra, answerer }: { hint: Hint; soup:
   else if (hint.kind === 'question') {
     const q = soup.questions.find((x) => x.id === hint.questionId)!;
     text = `要不要問問看：「${q.text}」${q.who ? `（問${answerer(q)}）` : ''}`;
-  }
-  else if (hint.kind === 'blank') {
+  } else if (hint.kind === 'blank') {
     const n = soup.board.findIndex((s) => s.id === hint.sentenceId) + 1;
     text = `第 ${n} 句那一格，我會填「${kw.get(hint.keywordId)?.label}」。`;
   } else if (hint.kind === 'later') text = voice.hintLines.later;

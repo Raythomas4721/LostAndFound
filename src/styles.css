@@ -1512,3 +1512,138 @@ button.story-card:focus-visible {
   margin-left: 6px;
   color: var(--lamp);
 }
+
+/* ── 進程驚喜 ── */
+/* 插播：湯面翻轉時，蓋在畫面正中間跳出來 */
+.twist-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  background: rgba(0, 0, 0, 0.62);
+}
+
+.panel.twist {
+  width: min(560px, 100%);
+  max-height: calc(100vh - 32px);
+  overflow-y: auto;
+  background: var(--panel);
+  border-color: var(--lamp);
+  box-shadow: 0 0 0 3px var(--lamp-dim);
+  animation: twist-in 0.5s ease-out;
+}
+
+.panel.twist .eyebrow {
+  color: var(--lamp);
+  font-weight: 700;
+  letter-spacing: 0.2em;
+}
+
+.twist-line {
+  border-left: 2px solid var(--lamp);
+  padding-left: 8px;
+}
+
+.sentence.twisted {
+  border-left: 2px solid var(--lamp);
+  padding-left: 8px;
+}
+
+@keyframes twist-in {
+  0% {
+    transform: translateY(-6px);
+    opacity: 0;
+  }
+  30% {
+    transform: translateX(-4px);
+  }
+  60% {
+    transform: translateX(4px);
+  }
+  100% {
+    transform: none;
+    opacity: 1;
+  }
+}
+
+/* 換人回答 */
+.host-note {
+  border-color: var(--lamp);
+  color: var(--lamp);
+}
+
+/* 反過來問你 */
+.panel.reverse {
+  max-width: 720px;
+  margin: 0 auto;
+}
+
+.reverse-truth {
+  border: 1px dashed var(--line);
+  border-radius: 6px;
+  padding: 8px 12px;
+  margin: 8px 0 12px;
+  font-size: 0.92rem;
+  opacity: 0.9;
+}
+
+.reverse-q {
+  font-size: 1.15rem;
+  margin: 6px 0 12px;
+}
+
+.reverse-q .who,
+.reverse-picked .who {
+  color: var(--lamp);
+  margin-right: 8px;
+}
+
+.reverse-replies {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: 8px;
+}
+
+.reverse-replies .option {
+  text-align: center;
+}
+
+.reverse-picked {
+  margin: 4px 0 8px;
+}
+
+.panel.reverse .primary {
+  margin-top: 12px;
+}
+
+/* 假結局：看起來跟真的一樣 */
+.fake-end {
+  animation: fake-flicker 6s steps(1) infinite;
+}
+
+@keyframes fake-flicker {
+  0%,
+  96%,
+  100% {
+    opacity: 1;
+  }
+  97% {
+    opacity: 0.6;
+  }
+  98% {
+    opacity: 1;
+  }
+  99% {
+    opacity: 0.75;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .panel.twist,
+  .fake-end {
+    animation: none;
+  }
+}

@@ -12,7 +12,8 @@ export const ENDINGS: readonly Ending[] = [
   {
     id: 'someone',
     title: '十二樓有人',
-    when: { all: ['police'], ...SHE_TRUSTS_YOU },
+    // 對講機裡說溜嘴（slipped）的話，魏先生會先找到她
+    when: { all: ['police'], none: ['slipped'], ...SHE_TRUSTS_YOU },
     summary: '八年來第一次，電梯停在了十二樓。',
     scene: [
       { text: '禮拜五晚上十一點，魏先生拿著一份公文走進大廳。' },
@@ -71,6 +72,8 @@ export const EPILOGUES: readonly Epilogue[] = [
   { id: 'qi', who: '齊老先生', when: {}, text: '收件簿上，每個禮拜二都多了一個顫抖的「齊」字。' },
   { id: 'wei-refused', who: 魏先生, when: { all: ['refusedWei'] }, text: '魏先生的那個信封，你一直沒有打開。後來你才知道，裡面是一疊錢，和一張簡如八年前的照片。' },
   { id: 'wei-showed', who: 魏先生, when: { all: ['showedWei'] }, text: '你後來常常想起，魏先生看著第十六格說的那句話：「燈的開關，是新的。」' },
+  { id: 'wei-slipped', who: 魏先生, when: { all: ['slipped'] }, text: '那天凌晨，對講機裡你說溜的那一句，你後來想了很多年。' },
+  { id: 'wei-suspects', who: 魏先生, when: { all: ['weiSuspects'] }, text: '魏先生後來沒再按過那個門鈴。他說，對講機裡的人說了一句他知道是假的話，他就知道這棟樓在藏東西。' },
   { id: 'wei', who: 魏先生, when: {}, text: '魏先生的名片，你一直收在抽屜最裡面。' },
   { id: 'ji-police', who: '季伯', when: { all: ['police'] }, text: '季伯又開始每天晚上來警衛室坐。不是為了刪錄影，只是來喝茶。' },
   { id: 'ji', who: '季伯', when: {}, text: '季伯的帳號 JI-01，你一直沒有刪。' },

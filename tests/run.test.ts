@@ -5,7 +5,7 @@ import { NIGHTS } from '../src/content/lostandfound/nights';
 import { night1 } from '../src/content/lostandfound/nights/night1';
 import { matches } from '../src/engine/conditions';
 import { teaHint } from '../src/engine/hints';
-import { advance, choose, currentStep, finishIntro, finishReveal, finishSoup, freeFor, isRunState, newRun, pickEnding, pickEpilogues, setSoupStateFor, soupStateFor, type RunState } from '../src/engine/run';
+import { advance, answerReverse, choose, currentStep, finishIntro, finishReveal, finishSoup, freeFor, isRunState, newRun, pickEnding, pickEpilogues, setSoupStateFor, soupStateFor, type RunState } from '../src/engine/run';
 import { minQuestions } from '../src/engine/solver';
 import { applyCorrections, ask, availableQuestions, checkSentence, inspect, newSoupState, place, type SoupState } from '../src/engine/soup';
 import type { Soup } from '../src/engine/types';
@@ -32,7 +32,9 @@ function playThrough(picks: Record<string, string> = {}): RunState {
     else if (run.phase === 'reveal') run = finishReveal(run, NIGHTS);
     else {
       const step = currentStep(run, NIGHTS);
-      run = step?.kind === 'choice' ? choose(run, NIGHTS, picks[step.choice.id] ?? step.choice.options[0].id) : advance(run, NIGHTS);
+      if (step?.kind === 'choice') run = choose(run, NIGHTS, picks[step.choice.id] ?? step.choice.options[0].id);
+      else if (step?.kind === 'reverse') run = answerReverse(run, NIGHTS, step.reverse.questions.map((q) => q.truth ?? q.options?.[0] ?? '是'));
+      else run = advance(run, NIGHTS);
     }
   }
   return run;

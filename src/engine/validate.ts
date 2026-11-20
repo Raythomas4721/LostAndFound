@@ -1,7 +1,31 @@
 import { flagsIn, matches } from './conditions';
 import { freeFor, pickEnding } from './run';
 import { boardAnswers, freeKeywords, minQuestions, reachable } from './solver';
-import type { Ending, Epilogue, Night, Soup, StoryRules } from './types';
+import type { Ending, Epilogue, Night, Reply, Reverse, Soup, Step, StoryRules } from './types';
+
+const REPLIES: readonly Reply[] = ['是', '不是', '不重要', '是也不是'];
+
+/** 反過來問你：這一題可以選的回答。 */
+export function reverseOptions(q: Reverse['questions'][number]): readonly Reply[] {
+  return q.options ?? REPLIES;
+}
+
+/** 反過來問你：所有答法會立起的旗標組合（每一題只看會不會立旗標，相同的合併）。 */
+function reverseOutcomes(reverse: Reverse): string[][] {
+  let out: string[][] = [[]];
+  for (const q of reverse.questions) {
+    const per = [...new Set(reverseOptions(q).map((r) => q.on?.[r]?.flag ?? ''))];
+    out = out.flatMap((flags) => per.map((f) => (f && !flags.includes(f) ? [...flags, f] : flags)));
+  }
+  return out;
+}
+
+/** 一個步驟會立起的所有旗標 */
+function stepFlags(s: Step): string[] {
+  if (s.kind === 'choice') return s.choice.options.flatMap((o) => (o.flag ? [o.flag] : []));
+  if (s.kind === 'reverse') return s.reverse.questions.flatMap((q) => Object.values(q.on ?? {}).flatMap((x) => (x?.flag ? [x.flag] : [])));
+  return [];
+}
 
 export interface Issue {
   level: 'error' | 'warn';
@@ -51,7 +75,7 @@ export function validateSoup(soup: Soup, nightNumber: number, free: readonly str
     (q.requires ?? []).forEach((id) => checkRef(id, `題目 ${q.id} 的 requires`));
     if (q.reply === '不重要' && (q.unlocks ?? []).length > 0) err(`題目 ${q.id} 回答「不重要」卻解鎖了線索詞`);
     if (q.hesitant) {
-      if (soup.kind !== 'big') err(`題目 ${q.id} 標了 hesitant，但說謊只能用在大湯`);
+      if (soup.kind !== 'big' && !soup.host) err(`題目 ${q.id} 標了 hesitant，但主持人說謊只能用在大湯（或換人回答的碗）`);
       if ((q.unlocks ?? []).length > 0) err(`題目 ${q.id} 是謊話，不能解鎖線索詞`);
       if (!soup.questions.some((x) => x.corrects === q.id)) err(`題目 ${q.id} 是謊話，卻沒有更正版（corrects）`);
     }
@@ -83,6 +107,13 @@ export function validateSoup(soup: Soup, nightNumber: number, free: readonly str
     }
     for (const p of placeholders) if (!s.blanks.some((b) => b.id === p)) err(`句子 ${s.id} 的 {${p}} 沒有對應的空格`);
   }
+
+  // ── 插播 ──
+  const twistSentences = soup.board.filter((s) => s.twist);
+  if (soup.twist && twistSentences.length === 0) err('有插播（twist），推理板卻沒有標 twist 的句子');
+  if (!soup.twist && twistSentences.length > 0) err('推理板有 twist 的句子，卻沒有插播（twist）');
+  if (soup.twist && twistSentences.length === soup.board.length) err('推理板全部都是插播的句子，插播永遠不會觸發');
+  (soup.twist?.unlocks ?? []).forEach((id) => checkRef(id, '插播的 unlocks'));
 
   // ── 拿得到 ──
   const { keywords: reach, questions: reachQ } = reachable(soup, free);
@@ -122,8 +153,10 @@ export function enumerateFlagSets(nights: readonly Night[]): string[][] {
     const night = nights[ni];
     if (si >= night.after.length) return walk(ni + 1, 0, flags);
     const step = night.after[si];
-    if (step.kind !== 'choice' || !matches(step.when, flags)) return walk(ni, si + 1, flags);
-    for (const o of step.choice.options) walk(ni, si + 1, o.flag && !flags.includes(o.flag) ? [...flags, o.flag] : flags);
+    if (!matches(step.when, flags)) return walk(ni, si + 1, flags);
+    if (step.kind === 'choice') for (const o of step.choice.options) walk(ni, si + 1, o.flag && !flags.includes(o.flag) ? [...flags, o.flag] : flags);
+    else if (step.kind === 'reverse') for (const more of reverseOutcomes(step.reverse)) walk(ni, si + 1, [...flags, ...more.filter((f) => !flags.includes(f))]);
+    else walk(ni, si + 1, flags);
   };
   walk(0, 0, []);
   return results;
@@ -138,7 +171,7 @@ export function validateNights(
   const issues: Issue[] = [];
   const err = (where: string, message: string) => issues.push({ level: 'error', where, message });
 
-  const allFlags = new Set(nights.flatMap((n) => n.after.flatMap((s) => (s.kind === 'choice' ? s.choice.options.flatMap((o) => (o.flag ? [o.flag] : [])) : []))));
+  const allFlags = new Set(nights.flatMap((n) => n.after.flatMap(stepFlags)));
   const checkFlags = (where: string, list: string[]) => {
     for (const f of list) if (!allFlags.has(f)) err(where, `條件裡的旗標「${f}」沒有任何選項會立起來`);
   };
@@ -148,6 +181,16 @@ export function validateNights(
     if (night.n !== i + 1) err(where, `晚數編號是 ${night.n}，應該是 ${i + 1}`);
     for (const step of night.after) {
       checkFlags(where, flagsIn(step.when));
+      if (step.kind === 'reverse') {
+        const r = step.reverse;
+        if (r.questions.length === 0) err(r.id, '反過來問你，至少要有一題');
+        r.questions.forEach((q, qi) => {
+          const opts = reverseOptions(q);
+          if (opts.length < 2) err(r.id, `第 ${qi + 1} 題至少要有兩個回答可以選`);
+          if (q.truth && !opts.includes(q.truth)) err(r.id, `第 ${qi + 1} 題的正解「${q.truth}」不在選項裡`);
+          for (const k of Object.keys(q.on ?? {})) if (!opts.includes(k as Reply)) err(r.id, `第 ${qi + 1} 題的 on 寫了選項裡沒有的「${k}」`);
+        });
+      }
       if (step.kind !== 'choice') continue;
       const optIds = step.choice.options.map((o) => o.id);
       if (optIds.length < 2) err(step.choice.id, '選擇至少要有兩個選項');
@@ -222,6 +265,16 @@ export function validateRules(nights: readonly Night[], reports: readonly SoupRe
       if (!rules?.confront) warn(soup.id, `題目 ${q.id} 寫了 contradictedBy，但這本湯本沒有開對質`);
       for (const id of q.contradictedBy) if (!kw.has(id)) err(soup.id, `題目 ${q.id} 的 contradictedBy 指到不存在的線索詞「${id}」`);
     }
+    if (rules?.confront && soup.kind === 'small' && soup.host) {
+      // 換人回答的小湯：證據要在這一碗裡拿得到
+      const { keywords: reach } = reachable(soup);
+      for (const q of soup.questions) {
+        if (!q.hesitant) continue;
+        if (!q.contradictedBy?.length) warn(soup.id, `謊話 ${q.id} 沒有寫 contradictedBy，玩家沒辦法對質`);
+        else if (!q.contradictedBy.every((id) => reach.has(id))) err(soup.id, `謊話 ${q.id} 的證據在這一碗裡拿不到`);
+      }
+    }
+    if (soup.host && soup.kind === 'small' && soup.questions.some((q) => q.hesitant) && !rules?.confront) warn(soup.id, '換人回答的碗有謊話，但這本湯本沒有開對質，只能等更正版出現');
     if (rules?.confront && soup.kind === 'big') {
       // 坦白那一晚之前（含）拿得到的大湯線索詞：起始的 + 坦白前每一晚的 bigUnlocks
       const confessAt = nights.findIndex((n) => (n.bigUnlocks ?? []).some((id) => soup.questions.some((q) => q.corrects && (q.requires ?? []).includes(id))));

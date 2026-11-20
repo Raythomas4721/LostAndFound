@@ -73,6 +73,8 @@ export interface Sentence {
   blanks: Blank[];
   /** 時間軸規則：這一句發生的時間，推理板會照時間排成一條線 */
   time?: string;
+  /** 插播：這一句要等湯面翻轉（Soup.twist）之後才出現 */
+  twist?: boolean;
 }
 
 export interface Soup {
@@ -91,6 +93,13 @@ export interface Soup {
   caller?: string;
   /** 證人規則：這碗湯裡，某些證人還不能叫名字（例如「吧台的男人」） */
   witnessNames?: Record<string, string>;
+  /**
+   * 插播：其他句子都填對時，湯面翻轉——播一段插話、湯面多幾句、解鎖新的線索詞，
+   * 推理板多出標了 twist 的句子。插話裡的 {last} 會換成玩家最後問的那一題。
+   */
+  twist?: { label: string; lines: Line[]; surface?: Line[]; unlocks?: string[] };
+  /** 換人回答：這一碗不是平常的主持人回答。換上來的人可以說謊（hesitant），也可以被對質。 */
+  host?: { name: string; pronoun: '他' | '她'; note: string; confront?: { broken: string; truthful: string; noproof: string } };
 }
 
 export interface ChoiceOption {
@@ -120,8 +129,52 @@ export interface Condition {
   or?: Condition[];
 }
 
-/** 喝完湯之後依序發生的事：一段對話，或一個選擇。when 不成立就跳過。 */
-export type Step = { kind: 'lines'; lines: Line[]; when?: Condition } | { kind: 'choice'; choice: Choice; when?: Condition };
+/** 反過來問你：別人問是非題，你來回答。 */
+export interface ReverseQuestion {
+  text: string;
+  /** 測驗：正確的回答。答錯會有人小聲更正（wrong），不會卡住。沒寫就是怎麼答都可以。 */
+  truth?: Reply;
+  /** 可以選的回答；預設四個都可以 */
+  options?: Reply[];
+  /** 選了某個回答之後：對方的反應、立起的旗標 */
+  on?: Partial<Record<Reply, { flag?: string; reply?: Line[] }>>;
+  /** 答錯時的更正 */
+  wrong?: Line[];
+}
+
+export interface Reverse {
+  id: string;
+  /** 問你的人 */
+  asker: string;
+  /** 標題，例如「換你當溫伯」 */
+  heading: string;
+  /** 開始之前的說明 */
+  intro: Line[];
+  /** 只有你看得到的湯底（測驗用） */
+  truth?: Line[];
+  questions: ReverseQuestion[];
+  /** 全部答完之後 */
+  outro: Line[];
+  /** 測驗全對時，多說的話 */
+  perfect?: Line[];
+}
+
+/** 假結局：看起來像結局卡，按下去才發現故事還沒完。 */
+export interface FakeEnd {
+  title: string;
+  summary: string;
+  /** 假的「後來」 */
+  epilogue?: { who: string; text: string }[];
+  /** 卡片碎掉之後的那幾句 */
+  crack: Line[];
+}
+
+/** 喝完湯之後依序發生的事：一段對話、一個選擇、反過來問你、或一張假結局。when 不成立就跳過。 */
+export type Step =
+  | { kind: 'lines'; lines: Line[]; when?: Condition }
+  | { kind: 'choice'; choice: Choice; when?: Condition }
+  | { kind: 'reverse'; reverse: Reverse; when?: Condition }
+  | { kind: 'fakeEnd'; fakeEnd: FakeEnd; when?: Condition };
 
 export interface Night {
   n: number;

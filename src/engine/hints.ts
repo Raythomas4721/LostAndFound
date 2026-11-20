@@ -1,5 +1,5 @@
-import { boardAnswers, freeKeywords, hintQuestion } from './solver';
-import type { SoupState } from './soup';
+import { freeKeywords, hintQuestion } from './solver';
+import { visibleBoard, type SoupState } from './soup';
 import type { Soup } from './types';
 
 export type Hint =
@@ -17,7 +17,8 @@ export type Hint =
  */
 export function teaHint(soup: Soup, state: SoupState): Hint {
   const unlocked = new Set(state.unlocked);
-  const missing = boardAnswers(soup).filter((id) => !unlocked.has(id));
+  const board = visibleBoard(soup, state);
+  const missing = [...new Set(board.flatMap((s) => s.blanks.map((b) => b.answer)))].filter((id) => !unlocked.has(id));
   if (missing.length > 0) {
     const free = new Set(freeKeywords(soup));
     if (missing.some((id) => free.has(id))) return { kind: 'inspect' };
@@ -31,7 +32,7 @@ export function teaHint(soup: Soup, state: SoupState): Hint {
     // 缺的線索詞要等之後的晚上才拿得到（大湯）
     return { kind: 'later' };
   }
-  for (const s of soup.board) {
+  for (const s of board) {
     if (state.solved.includes(s.id)) continue;
     const blank = s.blanks.find((b) => state.placements[b.id] !== b.answer);
     if (blank) return { kind: 'blank', sentenceId: s.id, blankId: blank.id, keywordId: blank.answer };

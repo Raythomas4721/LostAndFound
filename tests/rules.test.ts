@@ -6,7 +6,9 @@ import { night1 as radioNight1 } from '../src/content/radio/night1';
 import { school } from '../src/content/school';
 import { night1 as schoolNight1 } from '../src/content/school/night1';
 import { askWith, battery, callBack, callLeft, canConfront, confront, hungUp, inspectWith } from '../src/engine/rules';
-import { ask, availableQuestions, newSoupState } from '../src/engine/soup';
+import { ask, availableQuestions, checkSentence, inspect, isSoupSolved, newSoupState, visibleBoard, type SoupState } from '../src/engine/soup';
+import { advance, answerReverse, currentStep, newRun, type RunState } from '../src/engine/run';
+import { tower } from '../src/content/tower';
 import { validateSoup } from '../src/engine/validate';
 import { night1 as barNight1 } from '../src/content/bar/night1';
 
@@ -108,5 +110,57 @@ describe('證人（雙人座）', () => {
     const broken = { ...soup, questions: soup.questions.filter((q) => !(q.text === '吧台的男人和安安認識嗎？' && !q.lie)) };
     const report = validateSoup(broken, 1);
     expect(report.issues.some((i) => i.level === 'error' && i.message.includes('拆不穿'))).toBe(true);
+  });
+});
+
+describe('進程驚喜', () => {
+  it('插播：其他句子都填對時湯面翻轉，多出新的句子和線索詞，通話重算', () => {
+    const soup = radio.nights[1].soup!;
+    let s: SoupState = { ...newSoupState(soup), callAsked: 5 };
+    expect(visibleBoard(soup, s).some((x) => x.twist)).toBe(false);
+    for (const sentence of soup.board.filter((x) => !x.twist)) {
+      for (const b of sentence.blanks) s = { ...s, unlocked: [...s.unlocked, b.answer], placements: { ...s.placements, [b.id]: b.answer } };
+      s = checkSentence(soup, s, sentence.id).state;
+    }
+    expect(s.twisted).toBe(true);
+    expect(s.callAsked).toBe(0);
+    expect(s.unlocked).toContain('onair');
+    expect(isSoupSolved(soup, s)).toBe(false);
+    expect(visibleBoard(soup, s).some((x) => x.twist)).toBe(true);
+  });
+
+  it('換人回答：小湯裡換上來的人說謊，拿到證據就能當場對質', () => {
+    const soup = inn.nights[1].soup!;
+    expect(soup.host?.name).toBe('江先生');
+    let s = ask(soup, newSoupState(soup), 'q-bh-after');
+    expect(canConfront(soup, s, 'q-bh-after', inn.rules)).toBe(true);
+    expect(confront(soup, s, 'q-bh-after').result).toBe('noproof');
+    s = inspect(soup, s, 'hs-mud');
+    const r = confront(soup, s, 'q-bh-after');
+    expect(r.result).toBe('broken');
+    expect(r.state.unlocked).toContain('backpath');
+  });
+
+  it('反過來問你：答案立起旗標；沒答完不能前進', () => {
+    const nights = tower.nights;
+    const n = nights.findIndex((x) => x.after.some((st) => st.kind === 'reverse'));
+    const si = nights[n].after.findIndex((st) => st.kind === 'reverse');
+    const run: RunState = { ...newRun(), night: n, phase: 'after', step: si };
+    expect(currentStep(run, nights)?.kind).toBe('reverse');
+    expect(advance(run, nights)).toBe(run);
+    const after = answerReverse(run, nights, ['是', '不是', '是', '不重要']);
+    expect(after.flags).toContain('slipped');
+    expect(after.night > n || after.step > si).toBe(true);
+  });
+
+  it('假結局：只是一個步驟，按下去故事繼續', () => {
+    const nights = school.nights;
+    const n = nights.findIndex((x) => x.after.some((st) => st.kind === 'fakeEnd'));
+    const si = nights[n].after.findIndex((st) => st.kind === 'fakeEnd');
+    const run: RunState = { ...newRun(), night: n, phase: 'after', step: si };
+    expect(currentStep(run, nights)?.kind).toBe('fakeEnd');
+    const next = advance(run, nights);
+    expect(next.phase).toBe('intro');
+    expect(next.night).toBe(n + 1);
   });
 });
