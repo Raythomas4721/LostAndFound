@@ -25,6 +25,7 @@ import { clearRun, loadRun, saveRun } from './save';
 import { Dialogue } from './ui/Dialogue';
 import { Notebook } from './ui/Notebook';
 import { SoupView } from './ui/SoupView';
+import { isMuted, play, setAmbience, setMuted } from './ui/sound';
 
 const BIG = bigSoupOf(NIGHTS);
 
@@ -32,10 +33,17 @@ export function App() {
   const [saved] = useState(loadRun);
   const [run, setRun] = useState<RunState | null>(null);
   const [notebook, setNotebook] = useState(false);
+  const [mute, setMute] = useState(isMuted);
 
   useEffect(() => {
     if (run) saveRun(run);
   }, [run]);
+
+  // 環境音跟著晚上走（第三晚下雨）。run 是在使用者點了按鈕之後才有的，瀏覽器允許出聲。
+  const ambience = run && run.phase !== 'end' ? (NIGHTS[run.night]?.ambience ?? null) : null;
+  useEffect(() => {
+    setAmbience(ambience);
+  }, [ambience, mute]);
 
   if (!run) return <Title hasSave={!!saved} onContinue={() => setRun(saved)} onNew={() => setRun(newRun())} />;
 
@@ -54,6 +62,18 @@ export function App() {
           {night && <span className="night-tag">{night.title}</span>}
         </div>
         <div className="top-actions">
+          <button
+            type="button"
+            className="ghost"
+            aria-pressed={!mute}
+            title={mute ? '打開聲音' : '關掉聲音'}
+            onClick={() => {
+              setMuted(!mute);
+              setMute(!mute);
+            }}
+          >
+            {mute ? '🔇' : '🔊'}
+          </button>
           <button type="button" className="ghost" onClick={() => setNotebook(true)}>
             📓 筆記本
           </button>
@@ -183,7 +203,18 @@ function EndingView({ run, onRestart }: { run: RunState; onRestart: () => void }
   const [sceneDone, setSceneDone] = useState(false);
   if (!ending) return null;
   const sceneEnding = ENDINGS.find((e) => e.id === ending.id)!;
-  if (!sceneDone) return <Dialogue key={`ending-${ending.id}`} lines={sceneEnding.scene} doneLabel="……" onDone={() => setSceneDone(true)} />;
+  if (!sceneDone)
+    return (
+      <Dialogue
+        key={`ending-${ending.id}`}
+        lines={sceneEnding.scene}
+        doneLabel="……"
+        onDone={() => {
+          play('bell');
+          setSceneDone(true);
+        }}
+      />
+    );
 
   const epilogues = pickEpilogues(run.flags, matches);
   const soups = NIGHTS.flatMap((n) => (n.soup ? [{ night: n, soup: n.soup }] : []));

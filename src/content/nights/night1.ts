@@ -44,12 +44,13 @@ const soup: Soup = {
   evidence: [
     {
       id: 'ev-umbrella',
+      art: 'umbrella',
       name: '黑色長柄傘',
       description: '一把用了很多年的黑色長柄傘，木頭傘柄磨得發亮。',
       hotspots: [
-        { id: 'hs-carved', name: '傘柄', label: '木頭傘柄上刻了一個「秋」字，刻得很深。', unlocks: ['carved'] },
-        { id: 'hs-rib', name: '傘骨', label: '有一根傘骨斷了，用膠帶纏過。', unlocks: ['rib'] },
-        { id: 'hs-tag', name: '拾獲標籤', label: '拾獲標籤：第二月台，東側長椅。阿琴的字。', unlocks: ['platform'] },
+        { id: 'hs-carved', at: [14, 86], name: '傘柄', label: '木頭傘柄上刻了一個「秋」字，刻得很深。', unlocks: ['carved'] },
+        { id: 'hs-rib', at: [66, 41], name: '傘骨', label: '有一根傘骨斷了，用膠帶纏過。', unlocks: ['rib'] },
+        { id: 'hs-tag', at: [60, 74], name: '拾獲標籤', label: '拾獲標籤：第二月台，東側長椅。阿琴的字。', unlocks: ['platform'] },
       ],
     },
   ],

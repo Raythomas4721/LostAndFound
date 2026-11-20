@@ -141,5 +141,5 @@ export const night6: Night = {
     '溫伯坦白：四十年前，他把「秋棠」寫成「秋堂」，把鐵盒歸進乙-7。秋棠來問時，他說沒有。',
     '溫伯說：這個禮拜，有幾題他說了謊。',
   ],
-  bigUnlocks: ['confession', 'afraid', 'letter'],
+  bigUnlocks: ['confession', 'letter'],
 };

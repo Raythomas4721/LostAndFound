@@ -81,7 +81,7 @@ export const bigSoup: Soup = {
     { id: 'e-he', topic: 'elope', text: '那個人上車了嗎？', reply: '是也不是', say: '他搭了早一班。' },
     { id: 'e-zhuo', topic: 'elope', text: '要跟她一起走的人是卓遠嗎？', reply: '是', requires: ['zhuoyuan'] },
     // 卓遠反悔了
-    { id: 'c-really', topic: 'changedmind', text: '卓遠真的反悔了嗎？', reply: '不是', requires: ['zhuoyuan'], say: '他在溪口站等她。', unlocks: ['xikoustation'] },
+    { id: 'c-really', topic: 'changedmind', text: '卓遠真的反悔了嗎？', reply: '不是', requires: ['zhuoyuan', 'elope'], say: '他在溪口站等她。', unlocks: ['xikoustation'] },
     { id: 'c-why', topic: 'changedmind', text: '秋姨是因為找不到鐵盒，才以為他反悔的嗎？', reply: '是', requires: ['zhuoyuan'] },
     // 溪口站
     { id: 'x-days', topic: 'xikoustation', text: '卓遠在溪口站等了很久嗎？', reply: '是', say: '三天。', unlocks: ['threedays'] },
@@ -107,6 +107,7 @@ export const bigSoup: Soup = {
     // 不敢說出口、坦白
     { id: 'a-tried', topic: 'afraid', text: '溫伯想過要說出來嗎？', reply: '是', say: '每一年。' },
     { id: 'a-stay', topic: 'afraid', text: '溫伯留在霧埔，是因為這件事嗎？', reply: '是' },
+    { id: 'cf-afraid', topic: 'confession', text: '溫伯四十年都沒說，是因為不敢嗎？', reply: '是', say: '一開始是不敢。後來，是不知道怎麼開口。', unlocks: ['afraid'] },
     { id: 'cf-why', topic: 'confession', text: '溫伯是因為停駛，才決定說出來的嗎？', reply: '是也不是', say: '是因為有人一直問。' },
     // 其他
     { id: 'sh-son', topic: 'shuheng', text: '書恆是卓遠的兒子嗎？', reply: '是' },

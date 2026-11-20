@@ -2,7 +2,9 @@ import { useMemo, useState } from 'react';
 import { teaHint, type Hint } from '../engine/hints';
 import { ask, availableQuestions, checkSentence, inspect, isSoupSolved, place, type SoupState } from '../engine/soup';
 import { CATEGORIES, type Keyword, type Question, type Soup } from '../engine/types';
+import { EvidenceArt, hasArt } from './art';
 import { LineView } from './Dialogue';
+import { play } from './sound';
 
 interface Props {
   soup: Soup;
@@ -35,14 +37,22 @@ export function SoupView({ soup, state, onChange, onFinish, finishable = true, n
     setSeen((s) => new Set(s).add(id));
   };
 
+  /** 有新線索詞就響小鈴，沒有就只是「叩」一聲。 */
+  const soundFor = (before: SoupState, after: SoupState) => play(after.unlocked.length > before.unlocked.length ? 'unlock' : 'ask');
+
   const doAsk = (q: Question) => {
-    onChange(ask(soup, state, q.id));
+    const next = ask(soup, state, q.id);
+    soundFor(state, next);
+    onChange(next);
     setLastAsked(q.id);
     if (tea?.kind === 'question' && tea.questionId === q.id) setTea(null);
   };
 
   const doInspect = (hotspotId: string) => {
-    onChange(inspect(soup, state, hotspotId));
+    if (state.inspected.includes(hotspotId)) return;
+    const next = inspect(soup, state, hotspotId);
+    soundFor(state, next);
+    onChange(next);
     if (tea?.kind === 'inspect') setTea(null);
   };
 
@@ -53,13 +63,16 @@ export function SoupView({ soup, state, onChange, onFinish, finishable = true, n
     const result = checkSentence(soup, next, sentence.id);
     next = result.state;
     onChange(next);
-    if (result.result !== 'incomplete') setFeedback({ sentenceId: sentence.id, ok: result.result === 'correct' });
-    else setFeedback(null);
+    if (result.result !== 'incomplete') {
+      setFeedback({ sentenceId: sentence.id, ok: result.result === 'correct' });
+      play(result.result === 'correct' ? 'correct' : 'wrong');
+    } else setFeedback(null);
     if (tea?.kind === 'blank' && result.result === 'correct') setTea(null);
   };
 
   const pourTea = () => {
     const hint = teaHint(soup, state);
+    play('tea');
     onChange({ ...state, tea: state.tea + 1 });
     setTea(hint);
     if (hint.kind === 'question') selectKeyword(hint.topic);
@@ -155,6 +168,28 @@ export function SoupView({ soup, state, onChange, onFinish, finishable = true, n
           {soup.evidence.map((e) => (
             <div key={e.id} className={`ev-card${tea?.kind === 'inspect' ? ' hinted' : ''}`}>
               <div className="ev-name">{e.name}</div>
+              {e.art && hasArt(e.art) && (
+                <div className="ev-stage">
+                  <EvidenceArt id={e.art} title={e.name} />
+                  {/* 插畫上的熱點只是滑鼠的捷徑；鍵盤和螢幕閱讀器用下面那排按鈕 */}
+                  {e.hotspots.map((h) =>
+                    h.at ? (
+                      <button
+                        type="button"
+                        key={h.id}
+                        className={`hs-dot${state.inspected.includes(h.id) ? ' seen' : ''}`}
+                        style={{ left: `${h.at[0]}%`, top: `${h.at[1]}%` }}
+                        onClick={() => doInspect(h.id)}
+                        title={h.name}
+                        aria-hidden="true"
+                        tabIndex={-1}
+                      >
+                        {state.inspected.includes(h.id) ? '✓' : '?'}
+                      </button>
+                    ) : null,
+                  )}
+                </div>
+              )}
               <p className="ev-desc">{e.description}</p>
               <div className="hotspots">
                 {e.hotspots.map((h) =>
@@ -234,7 +269,14 @@ export function SoupView({ soup, state, onChange, onFinish, finishable = true, n
         {solved && finishable && (
           <div className="finish">
             <p>每一句都對了。</p>
-            <button type="button" className="primary" onClick={onFinish}>
+            <button
+              type="button"
+              className="primary"
+              onClick={() => {
+                play('finish');
+                onFinish();
+              }}
+            >
               喝完這碗湯
             </button>
           </div>

@@ -40,6 +40,8 @@ export interface Hotspot {
   /** 細看時看到的描述 */
   label: string;
   unlocks: string[];
+  /** 在插畫上的位置（百分比，左上角是 0,0） */
+  at?: [number, number];
 }
 
 export interface Evidence {
@@ -47,6 +49,8 @@ export interface Evidence {
   name: string;
   description: string;
   hotspots: Hotspot[];
+  /** 插畫的 id，對應 src/ui/art.tsx */
+  art?: string;
 }
 
 export interface Blank {
@@ -118,6 +122,8 @@ export interface Night {
   bigClues?: string[];
   /** 這一晚結束時，大湯解鎖的線索詞 */
   bigUnlocks?: string[];
+  /** 背景環境音 */
+  ambience?: 'rain';
 }
 
 export interface Ending {

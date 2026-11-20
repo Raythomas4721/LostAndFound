@@ -49,11 +49,12 @@ const soup: Soup = {
   evidence: [
     {
       id: 'ev-bell',
+      art: 'bell',
       name: '小銅鈴',
       description: '一顆拇指大的銅鈴，還綁著一段咬斷的藍色毛線。',
       hotspots: [
-        { id: 'hs-tag', name: '紙條', label: '鈴鐺的環上綁著一張褪色的小紙條：「招領　第 0412 號」。', unlocks: ['tag', 'office'] },
-        { id: 'hs-thread', name: '毛線', label: '毛線縫了好幾層，打了三個結。縫的人很怕它掉。', unlocks: ['thread'] },
+        { id: 'hs-tag', at: [79, 42], name: '紙條', label: '鈴鐺的環上綁著一張褪色的小紙條：「招領　第 0412 號」。', unlocks: ['tag', 'office'] },
+        { id: 'hs-thread', at: [29, 16], name: '毛線', label: '毛線縫了好幾層，打了三個結。縫的人很怕它掉。', unlocks: ['thread'] },
       ],
     },
   ],

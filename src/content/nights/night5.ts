@@ -46,18 +46,20 @@ const soup: Soup = {
   evidence: [
     {
       id: 'ev-watch',
+      art: 'watch',
       name: '銅懷錶',
       description: '一只銅製懷錶，錶鏈斷了一截。',
       hotspots: [
-        { id: 'hs-lid', name: '錶蓋', label: '錶蓋內側刻著「霧埔支線開通紀念」。是當年發給員工的。', unlocks: [] },
-        { id: 'hs-chain', name: '錶鏈', label: '錶鏈的斷口很新，像是被勾到扯斷的。', unlocks: [] },
+        { id: 'hs-lid', at: [36, 46], name: '錶蓋', label: '錶蓋內側刻著「霧埔支線開通紀念」。是當年發給員工的。', unlocks: [] },
+        { id: 'hs-chain', at: [69, 13], name: '錶鏈', label: '錶鏈的斷口很新，像是被勾到扯斷的。', unlocks: [] },
       ],
     },
     {
       id: 'ev-card',
+      art: 'card',
       name: '名片',
       description: '灰西裝男人留給溫伯的名片，紙很厚。',
-      hotspots: [{ id: 'hs-card', name: '名片上的字', label: '「仲達古物　方仲達　收購各式鐵道舊物、站牌、票據、紀念品」', unlocks: ['card'] }],
+      hotspots: [{ id: 'hs-card', at: [74, 70], name: '名片上的字', label: '「仲達古物　方仲達　收購各式鐵道舊物、站牌、票據、紀念品」', unlocks: ['card'] }],
     },
   ],
   questions: [
@@ -77,7 +79,7 @@ const soup: Soup = {
     { id: 'q-wantwatch', topic: 'watch', text: '他真正想要的是懷錶嗎？', reply: '不是' },
     { id: 'q-ownerwho', topic: 'owner', text: '懷錶的主人會來領嗎？', reply: '不重要' },
     // 舊倉、清倉
-    { id: 'q-instore', topic: 'storeroom', text: '他想要的東西在舊倉裡嗎？', reply: '是', requires: ['onpurpose'], say: '乙-7。', unlocks: ['box'] },
+    { id: 'q-instore', topic: 'storeroom', text: '他想收的東西在舊倉裡嗎？', reply: '是', requires: ['onpurpose', 'auction'], say: '乙-7。', unlocks: ['box'] },
     { id: 'q-sawledger', topic: 'clearing', text: '他在清倉的時候看過登記簿嗎？', reply: '是', say: '還拍了照。', unlocks: ['ledger'] },
     // 綠色鐵盒、登記簿
     { id: 'q-knowsname', topic: 'box', text: '他知道鐵盒的領取人叫什麼嗎？', reply: '是', say: '何秋堂。他照著登記簿念的。' },

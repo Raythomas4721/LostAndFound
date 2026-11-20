@@ -49,13 +49,14 @@ const soup: Soup = {
   evidence: [
     {
       id: 'ev-pass',
+      art: 'pass',
       name: '掉下來的紙片',
       description: '一張護貝過的小卡，邊角被雨打濕了。',
       hotspots: [
-        { id: 'hs-title', name: '標題', label: '卡片上印著「探病證」。', unlocks: ['pass'] },
-        { id: 'hs-hospital', name: '醫院名稱', label: '溪口醫院，三樓，312 病房。', unlocks: ['hospital'] },
-        { id: 'hs-patient', name: '病人姓名', label: '病人姓名被雨水暈開了，只看得出第一個字是「卓」。', unlocks: ['zhuo'] },
-        { id: 'hs-back', name: '背面', label: '背面用原子筆寫著：「霧埔站　第二月台　東邊第三根柱子」。', unlocks: ['platform2'] },
+        { id: 'hs-title', at: [50, 21], name: '標題', label: '卡片上印著「探病證」。', unlocks: ['pass'] },
+        { id: 'hs-hospital', at: [66, 41], name: '醫院名稱', label: '溪口醫院，三樓，312 病房。', unlocks: ['hospital'] },
+        { id: 'hs-patient', at: [30, 64], name: '病人姓名', label: '病人姓名被雨水暈開了，只看得出第一個字是「卓」。', unlocks: ['zhuo'] },
+        { id: 'hs-back', at: [84, 80], name: '背面', label: '背面用原子筆寫著：「霧埔站　第二月台　東邊第三根柱子」。', unlocks: ['platform2'] },
       ],
     },
   ],
@@ -128,6 +129,7 @@ const soup: Soup = {
 export const night3: Night = {
   n: 3,
   title: '第三晚',
+  ambience: 'rain',
   intro: [
     { text: '從傍晚就開始下雨。候車室的地板上，一路都是濕腳印。' },
     { text: '溫伯比平常早到，坐在站長室門口，一直看著窗外的月台。' },

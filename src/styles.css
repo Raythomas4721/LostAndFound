@@ -950,3 +950,70 @@ h3 {
   padding: 0 5px;
   margin-right: 6px;
 }
+
+/* ── M3：失物插畫與熱點 ── */
+.ev-stage {
+  position: relative;
+  margin: 8px 0 6px;
+  border-radius: 4px;
+  background: radial-gradient(ellipse at 50% 40%, #3a3122 0%, #1c1810 80%);
+  border: 1px solid #4a3f28;
+}
+
+.ev-art {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.hs-dot {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  border: 2px solid var(--lamp);
+  background: rgba(20, 16, 8, 0.75);
+  color: var(--lamp);
+  font-size: 0.8rem;
+  font-weight: 700;
+  line-height: 1;
+  padding: 0;
+  display: grid;
+  place-items: center;
+  animation: pulse 1.8s ease-in-out infinite;
+}
+
+.hs-dot:hover {
+  background: var(--lamp);
+  color: #1d1606;
+}
+
+.hs-dot.seen {
+  animation: none;
+  border-color: #8a7a5a;
+  color: #c9b88f;
+  width: 20px;
+  height: 20px;
+  font-size: 0.7rem;
+  opacity: 0.8;
+}
+
+@keyframes pulse {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 rgba(242, 196, 109, 0.5);
+  }
+  50% {
+    box-shadow: 0 0 0 6px rgba(242, 196, 109, 0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hs-dot,
+  .question.hinted,
+  .ev-card.hinted,
+  .blank.hinted {
+    animation: none;
+  }
+}

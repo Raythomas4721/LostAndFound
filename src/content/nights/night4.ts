@@ -50,20 +50,22 @@ const soup: Soup = {
   evidence: [
     {
       id: 'ev-hat',
+      art: 'hat',
       name: '紅色童帽',
       description: '一頂紅色毛線帽，頂上有一顆起毛的小球。',
       hotspots: [
-        { id: 'hs-an', name: '帽沿內側', label: '帽沿內側用白線繡了一個「安」字。', unlocks: ['an'] },
-        { id: 'hs-ball', name: '毛球', label: '毛球被縫回去過，針腳很粗，不像是做帽子的人縫的。', unlocks: [] },
+        { id: 'hs-an', at: [71, 78], name: '帽沿內側', label: '帽沿內側用白線繡了一個「安」字。', unlocks: ['an'] },
+        { id: 'hs-ball', at: [50, 20], name: '毛球', label: '毛球被縫回去過，針腳很粗，不像是做帽子的人縫的。', unlocks: [] },
       ],
     },
     {
       id: 'ev-ledger',
+      art: 'ledger',
       name: '登記簿的那一頁',
       description: '「童帽一頂。狀態：已領取。經手人：葉美華。」',
       hotspots: [
-        { id: 'hs-where', name: '拾獲地點', label: '拾獲地點：支線車廂，末節。', unlocks: ['carriage'] },
-        { id: 'hs-date', name: '日期', label: '日期被水漬蓋掉了，只看得出是秋天。', unlocks: [] },
+        { id: 'hs-where', at: [46, 49], name: '拾獲地點', label: '拾獲地點：支線車廂，末節。', unlocks: ['carriage'] },
+        { id: 'hs-date', at: [21, 46], name: '日期', label: '日期被水漬蓋掉了，只看得出是秋天。', unlocks: [] },
       ],
     },
   ],
@@ -84,7 +86,7 @@ const soup: Soup = {
     { id: 'q-yetook', topic: 'child', text: '是葉姊送他回家的嗎？', reply: '是', say: '她下了班，抱著他走了半個鎮。', unlocks: ['tookhome'] },
     { id: 'q-longago', topic: 'child', text: '那是很久以前的事嗎？', reply: '是', say: '十五年前。', unlocks: ['fifteen'] },
     { id: 'q-nearby', topic: 'child', text: '那個孩子現在還住在附近嗎？', reply: '是', say: '每天都搭這條線。', unlocks: ['morning'] },
-    { id: 'q-seen', topic: 'child', text: '我今晚見過那個孩子嗎？', reply: '是', say: '剛才來拿月票的那個。', unlocks: ['yian'] },
+    { id: 'q-seen', topic: 'child', text: '我今晚見過那個孩子嗎？', reply: '是', requires: ['morning'], say: '剛才來拿月票的那個。', unlocks: ['yian'] },
     // 陳以安
     { id: 'q-yianknows', topic: 'yian', text: '以安知道這件事嗎？', reply: '不是', say: '他那時候才三歲。', unlocks: ['forgot'] },
     { id: 'q-yewants', topic: 'yian', text: '葉姊想讓以安知道嗎？', reply: '是也不是', say: '她覺得，記得的人有一個就夠了。' },
