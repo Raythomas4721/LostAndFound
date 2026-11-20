@@ -1,4 +1,5 @@
 // 音效全部用 Web Audio 即時合成，不需要音檔。
+import type { Ambience } from '../engine/types';
 // 瀏覽器要等使用者點過畫面才能出聲，所以 AudioContext 在第一次播放時才建立。
 
 export type Sfx = 'ask' | 'unlock' | 'correct' | 'wrong' | 'finish' | 'tea' | 'bell';
@@ -8,8 +9,8 @@ const MUTE_KEY = 'lostandfound.sound.muted';
 let ctx: AudioContext | null = null;
 let master: GainNode | null = null;
 let muted = readMuted();
-let rain: { src: AudioBufferSourceNode; gain: GainNode } | null = null;
-let wantRain = false;
+let ambience: { kind: Ambience; sources: AudioScheduledSourceNode[]; gain: GainNode } | null = null;
+let wanted: Ambience | null = null;
 
 function readMuted(): boolean {
   try {
@@ -31,7 +32,7 @@ export function setMuted(value: boolean): void {
     // 存不了就只在這次有效
   }
   if (master && ctx) master.gain.setTargetAtTime(value ? 0 : 0.7, ctx.currentTime, 0.05);
-  if (!value && wantRain) startRain();
+  if (!value && wanted) startAmbience(wanted);
 }
 
 function audio(): { ctx: AudioContext; out: GainNode } | null {
@@ -129,39 +130,94 @@ export function play(name: Sfx): void {
   }
 }
 
-function startRain() {
-  if (rain || muted) return;
+/** 很稀疏的爆音，像收音機訊號不穩時的劈啪聲。 */
+function crackleBuffer(c: AudioContext, seconds: number): AudioBuffer {
+  const buf = c.createBuffer(1, Math.floor(c.sampleRate * seconds), c.sampleRate);
+  const data = buf.getChannelData(0);
+  for (let i = 0; i < data.length; i++) if (Math.random() < 0.0004) data[i] = (Math.random() * 2 - 1) * 0.9;
+  return buf;
+}
+
+function filtered(c: AudioContext, src: AudioNode, type: BiquadFilterType, freq: number, q = 0.7): BiquadFilterNode {
+  const f = c.createBiquadFilter();
+  f.type = type;
+  f.frequency.value = freq;
+  f.Q.value = q;
+  src.connect(f);
+  return f;
+}
+
+function loop(c: AudioContext, buffer: AudioBuffer): AudioBufferSourceNode {
+  const src = c.createBufferSource();
+  src.buffer = buffer;
+  src.loop = true;
+  return src;
+}
+
+/**
+ * 背景環境音：
+ * - rain：濾過的白噪音（失物招領處第三晚）
+ * - static：收音機的嘶嘶聲加上偶爾的劈啪（電台）
+ * - storm：大雨加上忽大忽小的風（民宿）
+ */
+function startAmbience(kind: Ambience) {
+  if (muted) return;
+  if (ambience?.kind === kind) return;
+  stopAmbience();
   const a = audio();
   if (!a) return;
   const { ctx: c, out } = a;
-  const src = c.createBufferSource();
-  src.buffer = noiseBuffer(c, 3);
-  src.loop = true;
-  const low = c.createBiquadFilter();
-  low.type = 'lowpass';
-  low.frequency.value = 1400;
-  const high = c.createBiquadFilter();
-  high.type = 'highpass';
-  high.frequency.value = 300;
   const gain = c.createGain();
   gain.gain.setValueAtTime(0.0001, c.currentTime);
-  gain.gain.exponentialRampToValueAtTime(0.05, c.currentTime + 2);
-  src.connect(high).connect(low).connect(gain).connect(out);
-  src.start();
-  rain = { src, gain };
+  gain.connect(out);
+  const sources: AudioScheduledSourceNode[] = [];
+
+  if (kind === 'rain' || kind === 'storm') {
+    const rain = loop(c, noiseBuffer(c, 3));
+    const level = c.createGain();
+    level.gain.value = kind === 'storm' ? 1.3 : 1;
+    filtered(c, filtered(c, rain, 'highpass', 300), 'lowpass', 1400).connect(level).connect(gain);
+    sources.push(rain);
+  }
+  if (kind === 'storm') {
+    // 風：低頻噪音，音量跟著一個很慢的波忽大忽小
+    const wind = loop(c, noiseBuffer(c, 4));
+    const windGain = c.createGain();
+    windGain.gain.value = 0.9;
+    const lfo = c.createOscillator();
+    lfo.frequency.value = 0.09;
+    const depth = c.createGain();
+    depth.gain.value = 0.7;
+    lfo.connect(depth).connect(windGain.gain);
+    filtered(c, wind, 'lowpass', 420, 1.2).connect(windGain).connect(gain);
+    sources.push(wind, lfo);
+  }
+  if (kind === 'static') {
+    const hiss = loop(c, noiseBuffer(c, 3));
+    const hissGain = c.createGain();
+    hissGain.gain.value = 0.35;
+    filtered(c, hiss, 'bandpass', 2600, 0.5).connect(hissGain).connect(gain);
+    const crackle = loop(c, crackleBuffer(c, 5));
+    filtered(c, crackle, 'highpass', 1200).connect(gain);
+    sources.push(hiss, crackle);
+  }
+
+  gain.gain.exponentialRampToValueAtTime(kind === 'static' ? 0.03 : 0.05, c.currentTime + 2);
+  for (const s of sources) s.start();
+  ambience = { kind, sources, gain };
 }
 
-function stopRain() {
-  if (!rain || !ctx) return;
-  const { src, gain } = rain;
+function stopAmbience() {
+  if (!ambience || !ctx) return;
+  const { sources, gain } = ambience;
   gain.gain.setTargetAtTime(0.0001, ctx.currentTime, 0.5);
-  src.stop(ctx.currentTime + 2);
-  rain = null;
+  for (const s of sources) s.stop(ctx.currentTime + 2);
+  ambience = null;
 }
 
-/** 背景環境音。目前只有雨聲（第三晚）。要在使用者點過畫面之後呼叫才會出聲。 */
-export function setAmbience(kind: 'rain' | null): void {
-  wantRain = kind === 'rain';
-  if (wantRain) startRain();
-  else stopRain();
+/** 背景環境音。要在使用者點過畫面之後呼叫才會出聲。 */
+export function setAmbience(kind: Ambience | null): void {
+  wanted = kind;
+  if (kind) startAmbience(kind);
+  else stopAmbience();
 }

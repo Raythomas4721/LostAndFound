@@ -143,7 +143,8 @@ export interface Epilogue {
   text: string;
 }
 
-export type Ambience = 'rain';
+/** 背景環境音：雨、收音機的雜訊、颱風。 */
+export type Ambience = 'rain' | 'static' | 'storm';
 
 /** 湯本的類型：決定首頁的分類和配色基調。 */
 export type Genre = '溫馨' | '怪奇' | '驚悚';
