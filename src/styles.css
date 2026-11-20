@@ -58,6 +58,20 @@
   --glow: #17352a;
 }
 
+/* 恐怖：夜裡的空教室，深紫藍裡一點粉筆白 */
+[data-theme='school'] {
+  --bg: #0e0e15;
+  --bg2: #13131c;
+  --panel: #171722;
+  --panel2: #1f1f2d;
+  --line: #2c2c3d;
+  --ink: #e6e3d8;
+  --muted: #9a97a8;
+  --lamp: #e8e1c8;
+  --lamp-dim: rgba(232, 225, 200, 0.12);
+  --glow: #251f3a;
+}
+
 /* 驚悚：颱風夜的山上，冷灰裡一點紅 */
 [data-theme='inn'] {
   --bg: #111315;

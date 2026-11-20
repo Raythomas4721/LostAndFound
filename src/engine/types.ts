@@ -143,11 +143,11 @@ export interface Epilogue {
   text: string;
 }
 
-/** 背景環境音：雨、收音機的雜訊、颱風。 */
-export type Ambience = 'rain' | 'static' | 'storm';
+/** 背景環境音：雨、收音機的雜訊、颱風、夜裡空教室的風和鐘。 */
+export type Ambience = 'rain' | 'static' | 'storm' | 'school';
 
 /** 湯本的類型：決定首頁的分類和配色基調。 */
-export type Genre = '溫馨' | '怪奇' | '驚悚';
+export type Genre = '溫馨' | '怪奇' | '驚悚' | '恐怖' | '懸疑';
 
 /**
  * 介面上跟著湯本換的字：誰回答你、提示叫什麼、失物叫什麼。

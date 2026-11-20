@@ -359,7 +359,124 @@ function PoliceNotebook() {
   );
 }
 
+// ── 最後一屆 ──
+
+/** 六年級教室的石板黑板：很淡的舊名字，最下面一行又小又低。 */
+function Blackboard() {
+  const names = ['王志明', '李淑芬', '陳建宏', '張雅婷', '林國華', '黃美玲', '吳家豪', '劉怡君'];
+  return (
+    <>
+      <rect x="0" y="0" width="240" height="160" fill="#2b2a26" />
+      <rect x="10" y="8" width="220" height="132" fill="#24342c" stroke="#6b5132" strokeWidth="5" />
+      {names.map((n, i) => (
+        <text key={n} x={i < 4 ? 26 : 90} y={30 + (i % 4) * 18} fontSize="10" fill="#d9dfd6" opacity={0.28 + (i % 3) * 0.08} fontFamily="serif">
+          {n}
+        </text>
+      ))}
+      <text x="154" y="30" fontSize="9" fill="#d9dfd6" opacity="0.25" fontFamily="serif">……</text>
+      <text x="154" y="66" fontSize="8" fill="#d9dfd6" opacity="0.3" fontFamily="serif">二十三</text>
+      {/* 第二十四行 */}
+      <text x="72" y="128" fontSize="8" fill="#f1f3ec" opacity="0.7" fontFamily="serif" transform="rotate(-4 80 126)">
+        阿□
+      </text>
+      {/* 粉筆槽 */}
+      <rect x="10" y="140" width="220" height="8" fill="#5a4329" />
+      <rect x="40" y="148" width="160" height="12" fill="#3a3430" />
+    </>
+  );
+}
+
+/** 廣播室的錄音機，插在定時器上。 */
+function Recorder() {
+  return (
+    <>
+      <rect x="0" y="0" width="240" height="160" fill="#22212a" />
+      <rect x="44" y="20" width="180" height="104" rx="8" fill="#55545c" stroke="#2a2a30" strokeWidth="2" />
+      <rect x="74" y="32" width="120" height="44" rx="4" fill="#1c1c22" />
+      <rect x="86" y="38" width="96" height="14" fill="#efe7cf" />
+      <text x="90" y="48" fontSize="6.5" fill="#4a3f2c" fontFamily="serif">第三十八屆 畢業典禮</text>
+      <circle cx="106" cy="64" r="7" fill="#e8e3d6" />
+      <circle cx="162" cy="64" r="7" fill="#e8e3d6" />
+      {[70, 94, 118, 142].map((x) => (
+        <rect key={x} x={x} y="92" width="18" height="14" rx="2" fill="#3a3a40" />
+      ))}
+      <circle cx="176" cy="99" r="3" fill="#e23c3c" />
+      <rect x="186" y="104" width="30" height="12" rx="2" fill="#1c1c22" />
+      <text x="189" y="113" fontSize="7" fill="#9fe39f" fontFamily="monospace">0817</text>
+      {/* 定時器 */}
+      <path d="M44 100 C28 110 26 124 30 134" fill="none" stroke="#111" strokeWidth="3" />
+      <rect x="8" y="126" width="44" height="30" rx="4" fill="#d8d4c6" stroke="#8a867a" />
+      <circle cx="30" cy="141" r="10" fill="#f4f1e8" stroke="#8a867a" />
+      <path d="M30 141 l0 -8" stroke="#c0392b" strokeWidth="1.5" />
+      <text x="26" y="134" fontSize="4" fill="#555">2:00</text>
+    </>
+  );
+}
+
+/** 福利社的冰櫃，裡面一瓶牛奶；地上一排小腳印。 */
+function MilkFridge() {
+  return (
+    <>
+      <rect x="0" y="0" width="240" height="160" fill="#1d1f24" />
+      <rect x="60" y="6" width="120" height="132" rx="4" fill="#cfd6db" stroke="#7d868c" strokeWidth="2" />
+      <rect x="70" y="16" width="100" height="112" fill="#a9c7d4" opacity="0.55" />
+      <path d="M70 60 h100 M70 96 h100" stroke="#7d868c" strokeWidth="2" />
+      {/* 牛奶瓶 */}
+      <path d="M114 60 v-14 c0 -4 -6 -6 -6 -12 v-6 h12 v6 c0 6 -6 8 -6 12" fill="#f4f4ef" stroke="#9aa" />
+      <rect x="108" y="44" width="12" height="16" fill="#f4f4ef" />
+      <rect x="108" y="26" width="12" height="4" fill="#3d7fbf" />
+      <path d="M108 48 h12" stroke="#c9d6dc" />
+      {/* 霧氣上的兩個小人 */}
+      <g stroke="#ffffff" strokeWidth="1" opacity="0.7" fill="none">
+        <circle cx="190" cy="34" r="3" />
+        <path d="M190 37 v7 M186 40 h8 M190 44 l-3 5 M190 44 l3 5" />
+        <circle cx="202" cy="38" r="2.2" />
+        <path d="M202 40 v5 M199 42 h6 M202 45 l-2 4 M202 45 l2 4" />
+      </g>
+      {/* 地板和腳印 */}
+      <path d="M0 138 h240 v22 H0 Z" fill="#3a3b40" />
+      {[
+        [30, 150],
+        [44, 144],
+        [58, 151],
+        [72, 145],
+      ].map(([x, y]) => (
+        <ellipse key={x} cx={x} cy={y} rx="4" ry="6" fill="#55575c" transform={`rotate(70 ${x} ${y})`} />
+      ))}
+    </>
+  );
+}
+
+/** 四十年前的值夜日誌。 */
+function NightLog() {
+  return (
+    <>
+      <rect x="0" y="0" width="240" height="160" fill="#262320" />
+      <rect x="16" y="8" width="208" height="146" rx="3" fill="#2f4a6b" />
+      <rect x="24" y="12" width="192" height="138" fill={PAPER} />
+      {[28, 44, 60, 76, 92, 108, 124, 140].map((y) => (
+        <path key={y} d={`M28 ${y} h184`} stroke="#d3c9ab" strokeWidth="0.7" />
+      ))}
+      <text x="30" y="24" fontSize="7" fill="#5a4c34" fontFamily="serif">六月　畢業典禮</text>
+      <text x="30" y="40" fontSize="6.5" fill="#3a3226" fontFamily="serif">颱風轉向。營火取消。畢業班留禮堂。</text>
+      <text x="30" y="56" fontSize="7.5" fill="#1f1a12" fontFamily="serif" fontWeight="700">點名：二十三人，全到。</text>
+      <path d="M118 52 l3 3 l6 -7" stroke="#6b6b6b" strokeWidth="0.8" fill="none" />
+      <text x="30" y="72" fontSize="6.5" fill="#3a3226" fontFamily="serif">22:00 防空洞進水，上鎖。</text>
+      {/* 水漬 */}
+      <circle cx="170" cy="96" r="18" fill="none" stroke="#b8a77c" strokeWidth="1.2" opacity="0.6" />
+      <circle cx="160" cy="104" r="11" fill="none" stroke="#b8a77c" strokeWidth="1" opacity="0.5" />
+      <text x="30" y="136" fontSize="7" fill="#3a3226" fontFamily="serif">找到。</text>
+      <path d="M58 133 h40" stroke="#3a3226" strokeWidth="1" />
+      <text x="62" y="136" fontSize="6" fill="#3a3226" opacity="0.5" fontFamily="serif">□樹</text>
+    </>
+  );
+}
+
 const ART: Record<string, () => JSX.Element> = {
+  blackboard: Blackboard,
+  recorder: Recorder,
+  milk: MilkFridge,
+  logbook: NightLog,
   umbrella: Umbrella,
   bell: Bell,
   pass: VisitorPass,

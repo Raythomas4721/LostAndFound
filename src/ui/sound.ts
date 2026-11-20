@@ -138,6 +138,17 @@ function crackleBuffer(c: AudioContext, seconds: number): AudioBuffer {
   return buf;
 }
 
+/** 兩秒的循環：每一秒開頭一聲很短的「滴」。 */
+function tickBuffer(c: AudioContext): AudioBuffer {
+  const buf = c.createBuffer(1, c.sampleRate * 2, c.sampleRate);
+  const data = buf.getChannelData(0);
+  for (const start of [0, c.sampleRate]) {
+    const len = Math.floor(c.sampleRate * 0.012);
+    for (let i = 0; i < len; i++) data[start + i] = (Math.random() * 2 - 1) * (1 - i / len) * 0.8;
+  }
+  return buf;
+}
+
 function filtered(c: AudioContext, src: AudioNode, type: BiquadFilterType, freq: number, q = 0.7): BiquadFilterNode {
   const f = c.createBiquadFilter();
   f.type = type;
@@ -159,6 +170,7 @@ function loop(c: AudioContext, buffer: AudioBuffer): AudioBufferSourceNode {
  * - rain：濾過的白噪音（失物招領處第三晚）
  * - static：收音機的嘶嘶聲加上偶爾的劈啪（電台）
  * - storm：大雨加上忽大忽小的風（民宿）
+ * - school：空教室的低風聲和時鐘滴答（最後一屆）
  */
 function startAmbience(kind: Ambience) {
   if (muted) return;
@@ -191,6 +203,16 @@ function startAmbience(kind: Ambience) {
     lfo.connect(depth).connect(windGain.gain);
     filtered(c, wind, 'lowpass', 420, 1.2).connect(windGain).connect(gain);
     sources.push(wind, lfo);
+  }
+  if (kind === 'school') {
+    // 空教室：很低的風聲，加上牆上時鐘一秒一下的滴答
+    const wind = loop(c, noiseBuffer(c, 4));
+    const windGain = c.createGain();
+    windGain.gain.value = 0.5;
+    filtered(c, wind, 'lowpass', 300, 1).connect(windGain).connect(gain);
+    const tick = loop(c, tickBuffer(c));
+    filtered(c, tick, 'bandpass', 2400, 2).connect(gain);
+    sources.push(wind, tick);
   }
   if (kind === 'static') {
     const hiss = loop(c, noiseBuffer(c, 3));
