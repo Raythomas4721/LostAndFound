@@ -12,8 +12,14 @@ const runsArg = process.argv.indexOf('--runs');
 const RUNS = runsArg >= 0 ? Number(process.argv[runsArg + 1]) : 300;
 const PATIENCE = 12; // 連續幾個動作沒進展就喝茶
 
+// mulberry32：小而均勻的亂數。原本的線性同餘產生器低位元有規律，連續挑選會互相影響，結局分布會失真。
 let seed = 20261118;
-const rand = () => (seed = (seed * 1103515245 + 12345) % 2147483648) / 2147483648;
+const rand = () => {
+  seed = (seed + 0x6d2b79f5) | 0;
+  let t = Math.imul(seed ^ (seed >>> 15), 1 | seed);
+  t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+  return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+};
 const pick = <T,>(xs: readonly T[]): T => xs[Math.floor(rand() * xs.length)];
 
 const progress = (s: SoupState) => s.asked.length + s.inspected.length + s.solved.length;

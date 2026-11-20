@@ -3,9 +3,10 @@ import { inn } from './inn';
 import { lostAndFound } from './lostandfound';
 import { radio } from './radio';
 import { school } from './school';
+import { tower } from './tower';
 
 /** 湯館書架上開張的湯本。新的一本做好之後加在這裡。 */
-export const STORIES: readonly Story[] = [lostAndFound, radio, inn, school];
+export const STORIES: readonly Story[] = [lostAndFound, radio, inn, school, tower];
 
 /** 還在熬的湯本：首頁先擺一張「即將開張」的卡。 */
 export const UPCOMING: readonly UpcomingStory[] = [];

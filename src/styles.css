@@ -58,6 +58,20 @@
   --glow: #17352a;
 }
 
+/* 懸疑：警衛室的監視器螢幕，暗藍裡一點青光 */
+[data-theme='tower'] {
+  --bg: #0a0f13;
+  --bg2: #0e151a;
+  --panel: #111a20;
+  --panel2: #18242c;
+  --line: #22323b;
+  --ink: #dce6ea;
+  --muted: #8b9ea8;
+  --lamp: #6fd0dc;
+  --lamp-dim: rgba(111, 208, 220, 0.12);
+  --glow: #11303c;
+}
+
 /* 恐怖：夜裡的空教室，深紫藍裡一點粉筆白 */
 [data-theme='school'] {
   --bg: #0e0e15;
@@ -1355,4 +1369,45 @@ button.story-card:focus-visible {
 
 .hs-btn:disabled {
   opacity: 0.45;
+}
+
+/* 時間軸：推理板畫成監視器的時間線 */
+.sentences.timeline {
+  list-style: none;
+  padding-left: 0;
+  border-left: 2px solid var(--line);
+  margin-left: 6px;
+}
+
+.sentences.timeline .sentence {
+  position: relative;
+  padding-left: 18px;
+}
+
+.sentences.timeline .sentence::before {
+  content: '';
+  position: absolute;
+  left: -7px;
+  top: 0.75em;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--panel);
+  border: 2px solid var(--lamp);
+}
+
+.sentences.timeline .sentence.done::before {
+  background: var(--lamp);
+}
+
+.tl-time {
+  display: inline-block;
+  margin-right: 10px;
+  padding: 0 8px;
+  border-radius: 4px;
+  background: var(--panel2);
+  color: var(--lamp);
+  font-family: ui-monospace, 'Consolas', monospace;
+  font-size: 0.85rem;
+  letter-spacing: 0.05em;
 }

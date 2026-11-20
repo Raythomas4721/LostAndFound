@@ -171,6 +171,7 @@ function loop(c: AudioContext, buffer: AudioBuffer): AudioBufferSourceNode {
  * - static：收音機的嘶嘶聲加上偶爾的劈啪（電台）
  * - storm：大雨加上忽大忽小的風（民宿）
  * - school：空教室的低風聲和時鐘滴答（最後一屆）
+ * - hum：警衛室的日光燈嗡嗡聲和機房風扇（十二樓沒有人）
  */
 function startAmbience(kind: Ambience) {
   if (muted) return;
@@ -213,6 +214,20 @@ function startAmbience(kind: Ambience) {
     const tick = loop(c, tickBuffer(c));
     filtered(c, tick, 'bandpass', 2400, 2).connect(gain);
     sources.push(wind, tick);
+  }
+  if (kind === 'hum') {
+    // 警衛室：日光燈的低頻嗡嗡聲，加上機房很遠的風扇
+    const hum = c.createOscillator();
+    hum.type = 'sawtooth';
+    hum.frequency.value = 60;
+    const humGain = c.createGain();
+    humGain.gain.value = 0.12;
+    filtered(c, hum, 'lowpass', 240).connect(humGain).connect(gain);
+    const fan = loop(c, noiseBuffer(c, 3));
+    const fanGain = c.createGain();
+    fanGain.gain.value = 0.25;
+    filtered(c, fan, 'bandpass', 700, 0.8).connect(fanGain).connect(gain);
+    sources.push(hum, fan);
   }
   if (kind === 'static') {
     const hiss = loop(c, noiseBuffer(c, 3));

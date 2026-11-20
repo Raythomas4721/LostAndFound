@@ -67,6 +67,8 @@ export interface Sentence {
   /** 用 {blankId} 標出空格的位置 */
   text: string;
   blanks: Blank[];
+  /** 時間軸規則：這一句發生的時間，推理板會照時間排成一條線 */
+  time?: string;
 }
 
 export interface Soup {
@@ -148,7 +150,7 @@ export interface Epilogue {
 }
 
 /** 背景環境音：雨、收音機的雜訊、颱風、夜裡空教室的風和鐘。 */
-export type Ambience = 'rain' | 'static' | 'storm' | 'school';
+export type Ambience = 'rain' | 'static' | 'storm' | 'school' | 'hum';
 
 /** 湯本的類型：決定首頁的分類和配色基調。 */
 export type Genre = '溫馨' | '怪奇' | '驚悚' | '恐怖' | '懸疑';
@@ -210,11 +212,14 @@ export interface Story {
  * - call：小湯裡有 caller 的碗，一通電話只能問幾題，問完對方掛斷，要回撥才能繼續
  * - confront：大湯裡的謊話，手上有 contradictedBy 的線索詞時可以當場對質拆穿
  * - flashlight：證物一開始是黑的，手電筒每碗只夠照幾個地方；每用一次提示，補一格電
+ * - timeline：推理板畫成時間軸，句子前面標著 Sentence.time
  */
 export interface StoryRules {
   call?: { length: number; hangup: string; callback: string };
   confront?: { label: string; broken: string; truthful: string; noproof: string; tip: string };
   flashlight?: { battery: number; empty: string; refill: string };
+  /** 推理板畫成監視器時間軸：每一句前面標著時間 */
+  timeline?: { label: string };
 }
 
 /** 還沒開張的湯本：首頁先擺一張卡。 */

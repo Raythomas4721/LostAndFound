@@ -273,19 +273,20 @@ export function SoupView({ soup, voice, rules, state, onChange, onFinish, finish
 
       <section className="panel board">
         <div className="board-head">
-          <h3>推理板：湯底</h3>
+          <h3>{rules?.timeline ? rules.timeline.label : '推理板：湯底'}</h3>
           <button type="button" className="tea" onClick={pourTea} disabled={solved}>
             {voice.hint.icon} {voice.hint.label}{state.tea > 0 ? `（${state.tea}）` : ''}
           </button>
         </div>
         {tea && <TeaLine hint={tea} soup={soup} kw={kw} voice={voice} extra={bat !== null ? rules?.flashlight?.refill : undefined} />}
-        <ol className="sentences">
+        <ol className={`sentences${rules?.timeline ? ' timeline' : ''}`}>
           {soup.board.map((s) => {
             const done = state.solved.includes(s.id);
             const fb = feedback?.sentenceId === s.id ? feedback : null;
             const parts = s.text.split(/(\{\w+\})/);
             return (
               <li key={s.id} className={`sentence${done ? ' done' : ''}${fb && !fb.ok ? ' wrong' : ''}`}>
+                {rules?.timeline && s.time && <span className="tl-time">{s.time}</span>}
                 {parts.map((part, i) => {
                   const m = part.match(/^\{(\w+)\}$/);
                   if (!m) return <span key={i}>{part}</span>;

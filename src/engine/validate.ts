@@ -229,6 +229,7 @@ export function validateRules(nights: readonly Night[], reports: readonly SoupRe
     }
   }
   if (rules?.flashlight && rules.flashlight.battery < 1) err('手電筒', '電池至少要一格');
+  if (rules?.timeline) for (const n of nights) for (const s of n.soup?.board ?? []) if (!s.time) warn(n.soup!.id, '時間軸的句子 ' + s.id + ' 沒有標時間');
   if (rules?.call && rules.call.length < 1) err('限時來電', '一通電話至少要能問一題');
   return issues;
 }

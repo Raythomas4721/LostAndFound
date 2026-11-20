@@ -472,7 +472,111 @@ function NightLog() {
   );
 }
 
+// ── 十二樓沒有人 ──
+
+/** CAM-08：黑白監視器畫面，走廊、一個倒著走的女人，地上一團黑。 */
+function CctvHall() {
+  return (
+    <>
+      <rect x="0" y="0" width="240" height="160" fill="#1b1f1d" />
+      {/* 走廊透視 */}
+      <path d="M0 160 L96 70 L144 70 L240 160 Z" fill="#3a403c" />
+      <path d="M0 0 L96 70 L96 20 L0 -40 Z" fill="#262b28" />
+      <path d="M240 0 L144 70 L144 20 L240 -40 Z" fill="#232825" />
+      <rect x="96" y="20" width="48" height="50" fill="#141715" />
+      {[150, 172, 200].map((x, i) => (
+        <rect key={x} x={x} y={36 - i * 12} width={10 + i * 4} height={48 + i * 18} fill="#2f3532" stroke="#4a514d" />
+      ))}
+      <text x="153" y="34" fontSize="5" fill="#9aa59f">806</text>
+      {/* 倒著走的女人：背對走廊盡頭、面向鏡頭 */}
+      <ellipse cx="104" cy="56" rx="7" ry="8" fill="#bfc6c1" />
+      <path d="M94 66 Q104 62 114 66 L118 112 L90 112 Z" fill="#8d958f" />
+      <path d="M114 72 Q120 92 110 112" stroke="#8d958f" strokeWidth="5" fill="none" strokeLinecap="round" />
+      <path d="M98 112 l-2 22 M110 112 l2 22" stroke="#6f7772" strokeWidth="5" strokeLinecap="round" />
+      {/* 很細的線，往下拉到畫面外 */}
+      <path d="M110 112 Q96 132 72 150" stroke="#d9e0db" strokeWidth="0.7" fill="none" opacity="0.8" />
+      {/* 地上那團黑 */}
+      <ellipse cx="66" cy="150" rx="18" ry="6" fill="#050605" opacity="0.85" />
+      {/* 掃描線與時間戳記 */}
+      {Array.from({ length: 16 }, (_, i) => (
+        <path key={i} d={`M0 ${i * 10 + 3} h240`} stroke="#ffffff" strokeWidth="0.4" opacity="0.05" />
+      ))}
+      <text x="150" y="13" fontSize="8" fill="#e8ece9" fontFamily="monospace">01:20:07 CAM-08</text>
+      <circle cx="10" cy="10" r="3" fill="#d23a2a" />
+    </>
+  );
+}
+
+/** 寄到「四樓之二」的紙盒。 */
+function Parcel() {
+  return (
+    <>
+      <rect x="0" y="0" width="240" height="160" fill="#2a2621" />
+      <path d="M30 40 L120 18 L214 40 L214 140 L120 156 L30 140 Z" fill="#b48a57" stroke="#7a5a32" strokeWidth="2" />
+      <path d="M30 40 L120 60 L214 40 M120 60 L120 156" stroke="#7a5a32" strokeWidth="1.5" fill="none" />
+      <path d="M30 40 L120 60 L214 40" fill="none" stroke="#e1d6b0" strokeWidth="7" opacity="0.5" />
+      {/* 標籤 */}
+      <rect x="40" y="30" width="72" height="42" fill="#f5f2ea" stroke="#c7c0ad" transform="rotate(4 76 51)" />
+      <text x="46" y="44" fontSize="6" fill="#444" transform="rotate(4 76 51)">收件人：齊</text>
+      <text x="46" y="54" fontSize="6" fill="#444" transform="rotate(4 76 51)">松風大廈 四樓之二</text>
+      <text x="46" y="64" fontSize="5" fill="#999" transform="rotate(4 76 51)">電話：</text>
+      <rect x="152" y="30" width="56" height="30" fill="#f5f2ea" stroke="#c7c0ad" transform="rotate(-6 180 45)" />
+      <text x="156" y="42" fontSize="5" fill="#444" transform="rotate(-6 180 45)">寄件：溪口</text>
+      <text x="156" y="51" fontSize="5" fill="#444" transform="rotate(-6 180 45)">仁和藥局</text>
+      {/* 底下那張舊貼紙 */}
+      <rect x="92" y="112" width="48" height="20" fill="#d9c98f" opacity="0.85" />
+      <text x="96" y="125" fontSize="5.5" fill="#6b5a2a">四樓之二（舊）</text>
+    </>
+  );
+}
+
+/** 調查員的名片，背面朝上壓著一角。 */
+function FakeCard() {
+  return (
+    <>
+      <rect x="0" y="0" width="240" height="160" fill="#1f2326" />
+      {/* 背面 */}
+      <rect x="18" y="96" width="110" height="58" rx="3" fill="#f2f0ea" transform="rotate(-8 73 125)" />
+      <text x="50" y="134" fontSize="12" fill="#2a2a2a" fontFamily="serif" transform="rotate(-8 73 125)">如</text>
+      <path d="M44 128 l26 -6" stroke="#2a2a2a" strokeWidth="2" transform="rotate(-8 73 125)" />
+      {/* 正面 */}
+      <rect x="70" y="24" width="150" height="88" rx="3" fill="#fbfaf6" stroke="#d6d2c6" />
+      <text x="84" y="48" fontSize="10" fill="#b38b2e" fontFamily="serif" fontWeight="700">宏信保險</text>
+      <text x="84" y="64" fontSize="7" fill="#444">理賠調查</text>
+      <text x="84" y="82" fontSize="12" fill="#222" fontFamily="serif">魏</text>
+      <text x="140" y="102" fontSize="6" fill="#666" fontFamily="monospace">TEL 02-2xxx-0000</text>
+      {/* 手 */}
+      <path d="M232 0 C214 14 206 22 198 30" stroke="#d8b79b" strokeWidth="14" strokeLinecap="round" fill="none" />
+      <path d="M204 22 l6 -5" stroke="#f2e4d6" strokeWidth="3" />
+    </>
+  );
+}
+
+/** 錄影主機的系統紀錄。 */
+function SysLog() {
+  const rows = ['06:05 DELETE CAM-12 user=JI-01', '06:05 DELETE CAM-12 user=JI-01', '06:05 DELETE CAM-12 user=JI-01', '06:05 DELETE CAM-12 user=JI-01', '06:05 DELETE CAM-12 user=JI-01'];
+  return (
+    <>
+      <rect x="0" y="0" width="240" height="160" fill="#151515" />
+      <rect x="10" y="8" width="220" height="144" rx="4" fill="#06120a" stroke="#2a3a2e" />
+      <text x="18" y="22" fontSize="7" fill="#4cd06a" fontFamily="monospace">NVR-16 LOG　帳號 JI-01</text>
+      {rows.map((r, i) => (
+        <text key={i} x="18" y={40 + i * 14} fontSize="7" fill="#4cd06a" opacity={0.95 - i * 0.12} fontFamily="monospace">
+          {r}
+        </text>
+      ))}
+      <text x="18" y="118" fontSize="7" fill="#4cd06a" opacity="0.35" fontFamily="monospace">……</text>
+      <text x="18" y="138" fontSize="7" fill="#9ae6a8" fontFamily="monospace">八年前 12 月　第一筆</text>
+      <rect x="150" y="128" width="6" height="10" fill="#4cd06a" />
+    </>
+  );
+}
+
 const ART: Record<string, () => JSX.Element> = {
+  'cctv-hall': CctvHall,
+  parcel: Parcel,
+  fakecard: FakeCard,
+  syslog: SysLog,
   blackboard: Blackboard,
   recorder: Recorder,
   milk: MilkFridge,
