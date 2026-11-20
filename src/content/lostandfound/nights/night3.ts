@@ -1,4 +1,4 @@
-import type { Night, Soup } from '../../engine/types';
+import type { Night, Soup } from '../../../engine/types';
 
 const 溫伯 = '溫伯';
 const 男人 = '背相機的男人';

@@ -1,4 +1,4 @@
-import type { Condition, Ending, Epilogue, Line } from '../engine/types';
+import type { Condition, Ending, Epilogue } from '../../engine/types';
 
 const 溫伯 = '溫伯';
 const 秋姨 = '秋姨';
@@ -13,12 +13,8 @@ export const WEN_TRUSTS_YOU: Condition = {
   or: [{ all: ['keyGiven'] }, { atLeast: { n: 2, of: ['ticketReturned', 'fangToWen', 'bellToWen'] } }],
 };
 
-export interface EndingWithScene extends Ending {
-  scene: Line[];
-}
-
 /** 由上往下，第一個條件成立的就是結局。 */
-export const ENDINGS: readonly EndingWithScene[] = [
+export const ENDINGS: readonly Ending[] = [
   {
     id: 'last-train',
     title: '末班車',
@@ -91,14 +87,3 @@ export const EPILOGUES: readonly Epilogue[] = [
   { id: 'ticket-thrown', who: '舊車票', when: { all: ['ticketThrown'] }, text: '那張舊車票被丟掉了。溫伯說沒關係，上面每一個字他都記得。' },
 ];
 
-/** 每個人只取第一條成立的尾聲。 */
-export function pickEpilogues(flags: readonly string[], matches: (c: Condition, f: readonly string[]) => boolean): Epilogue[] {
-  const seen = new Set<string>();
-  const out: Epilogue[] = [];
-  for (const ep of EPILOGUES) {
-    if (seen.has(ep.who) || !matches(ep.when, flags)) continue;
-    seen.add(ep.who);
-    out.push(ep);
-  }
-  return out;
-}

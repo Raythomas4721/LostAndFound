@@ -1,4 +1,4 @@
-import type { Soup } from '../engine/types';
+import type { Soup } from '../../engine/types';
 
 const 溫伯 = '溫伯';
 

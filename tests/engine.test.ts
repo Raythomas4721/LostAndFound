@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
-import { ENDINGS, EPILOGUES } from '../src/content/endings';
-import { NIGHTS } from '../src/content/nights';
-import { night1 } from '../src/content/nights/night1';
+import { ENDINGS, EPILOGUES } from '../src/content/lostandfound/endings';
+import { NIGHTS } from '../src/content/lostandfound/nights';
+import { night1 } from '../src/content/lostandfound/nights/night1';
 import { ask, availableQuestions, checkSentence, inspect, isSoupSolved, newSoupState, place, rate } from '../src/engine/soup';
 import { hintQuestion, minQuestions } from '../src/engine/solver';
 import { validateNights, validateSoup } from '../src/engine/validate';

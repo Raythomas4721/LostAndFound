@@ -1,4 +1,4 @@
-import type { Night } from '../../engine/types';
+import type { Night } from '../../../engine/types';
 
 const 溫伯 = '溫伯';
 const 阿琴 = '阿琴';

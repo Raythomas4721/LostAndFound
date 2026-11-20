@@ -1,11 +1,11 @@
 import { describe, expect, it } from 'vitest';
-import { bigSoup } from '../src/content/bigSoup';
-import { ENDINGS, EPILOGUES, pickEpilogues } from '../src/content/endings';
-import { NIGHTS } from '../src/content/nights';
-import { night1 } from '../src/content/nights/night1';
+import { bigSoup } from '../src/content/lostandfound/bigSoup';
+import { ENDINGS, EPILOGUES } from '../src/content/lostandfound/endings';
+import { NIGHTS } from '../src/content/lostandfound/nights';
+import { night1 } from '../src/content/lostandfound/nights/night1';
 import { matches } from '../src/engine/conditions';
 import { teaHint } from '../src/engine/hints';
-import { advance, choose, currentStep, finishIntro, finishReveal, finishSoup, freeFor, isRunState, newRun, pickEnding, setSoupStateFor, soupStateFor, type RunState } from '../src/engine/run';
+import { advance, choose, currentStep, finishIntro, finishReveal, finishSoup, freeFor, isRunState, newRun, pickEnding, pickEpilogues, setSoupStateFor, soupStateFor, type RunState } from '../src/engine/run';
 import { minQuestions } from '../src/engine/solver';
 import { applyCorrections, ask, availableQuestions, checkSentence, inspect, newSoupState, place, type SoupState } from '../src/engine/soup';
 import type { Soup } from '../src/engine/types';
@@ -130,7 +130,7 @@ describe('條件與尾聲', () => {
   });
 
   it('每個角色只有一條尾聲', () => {
-    const eps = pickEpilogues(['promisedPan', 'bellToWen', 'ticketKept'], matches);
+    const eps = pickEpilogues(EPILOGUES, ['promisedPan', 'bellToWen', 'ticketKept']);
     const who = eps.map((e) => e.who);
     expect(new Set(who).size).toBe(who.length);
     expect(eps.find((e) => e.who === '老潘')?.id).toBe('pan-promise');

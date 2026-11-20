@@ -70,7 +70,7 @@ export interface Sentence {
 export interface Soup {
   id: string;
   title: string;
-  /** small = 每晚的小湯；big = 秋姨的大湯 */
+  /** small = 每晚的小湯；big = 整本湯本的大湯，最後一晚才喝得完 */
   kind: 'small' | 'big';
   surface: Line[];
   start: string[];
@@ -123,7 +123,7 @@ export interface Night {
   /** 這一晚結束時，大湯解鎖的線索詞 */
   bigUnlocks?: string[];
   /** 背景環境音 */
-  ambience?: 'rain';
+  ambience?: Ambience;
 }
 
 export interface Ending {
@@ -132,6 +132,8 @@ export interface Ending {
   when: Condition;
   /** 結局畫面上的一段話 */
   summary: string;
+  /** 結局卡之前播的那一場戲 */
+  scene: Line[];
 }
 
 export interface Epilogue {
@@ -139,4 +141,69 @@ export interface Epilogue {
   who: string;
   when: Condition;
   text: string;
+}
+
+export type Ambience = 'rain';
+
+/** 湯本的類型：決定首頁的分類和配色基調。 */
+export type Genre = '溫馨' | '怪奇' | '驚悚';
+
+/**
+ * 介面上跟著湯本換的字：誰回答你、提示叫什麼、失物叫什麼。
+ * 引擎不認得這些，只有畫面會用。
+ */
+export interface StoryVoice {
+  /** 回答是非題的人 */
+  host: string;
+  /** 說謊停頓時用的代名詞 */
+  hostPronoun: '他' | '她';
+  /** 頂欄的名字 */
+  brand: string;
+  /** 首頁按鈕和每晚開場的按鈕 */
+  begin: string;
+  resume: string;
+  /** 證物欄的標題，例如「失物」 */
+  evidence: string;
+  /** 提示按鈕：圖示、文字，以及結局統計的「喝了 N 杯茶」 */
+  hint: { icon: string; label: string; used: string; unit: string };
+  /** 提示的幾種說法 */
+  hintLines: { inspect: string; later: string; done: string };
+  /** 大湯還不能喝完時的說明 */
+  bigWait: string;
+  bigWaitSolved: string;
+  /** 結局卡上「這一週的湯」 */
+  summaryHeading: string;
+  /** 結局卡最下面那一句 */
+  endingNote: string;
+  /** 「第一晚」之類的叫法：晚、夜、天 */
+  unit: string;
+}
+
+export interface Story {
+  id: string;
+  title: string;
+  subtitle: string;
+  genre: Genre;
+  /** 首頁卡片和開場頁的介紹，一行一句 */
+  blurb: string[];
+  /** 「七個晚上，約一小時」 */
+  length: string;
+  /** CSS 的 data-theme，決定配色 */
+  theme: string;
+  /** localStorage 的 key；各本分開存 */
+  saveKey: string;
+  voice: StoryVoice;
+  nights: readonly Night[];
+  endings: readonly Ending[];
+  epilogues: readonly Epilogue[];
+}
+
+/** 還沒開張的湯本：首頁先擺一張卡。 */
+export interface UpcomingStory {
+  id: string;
+  title: string;
+  subtitle: string;
+  genre: Genre;
+  blurb: string[];
+  theme: string;
 }

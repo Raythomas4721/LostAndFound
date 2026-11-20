@@ -1,13 +1,14 @@
 import { useMemo, useState } from 'react';
 import { teaHint, type Hint } from '../engine/hints';
 import { ask, availableQuestions, checkSentence, inspect, isSoupSolved, place, type SoupState } from '../engine/soup';
-import { CATEGORIES, type Keyword, type Question, type Soup } from '../engine/types';
+import { CATEGORIES, type Keyword, type Question, type Soup, type StoryVoice } from '../engine/types';
 import { EvidenceArt, hasArt } from './art';
 import { LineView } from './Dialogue';
 import { play } from './sound';
 
 interface Props {
   soup: Soup;
+  voice: StoryVoice;
   state: SoupState;
   onChange: (state: SoupState) => void;
   onFinish: () => void;
@@ -18,7 +19,7 @@ interface Props {
 
 type Feedback = { sentenceId: string; ok: boolean } | null;
 
-export function SoupView({ soup, state, onChange, onFinish, finishable = true, note }: Props) {
+export function SoupView({ soup, voice, state, onChange, onFinish, finishable = true, note }: Props) {
   const [selected, setSelected] = useState<string>(soup.start[0]);
   const [lastAsked, setLastAsked] = useState<string | null>(null);
   const [tea, setTea] = useState<Hint | null>(null);
@@ -128,7 +129,7 @@ export function SoupView({ soup, state, onChange, onFinish, finishable = true, n
         </section>
 
         <section className="panel ask">
-          <h3>問溫伯：關於「{kw.get(selected)?.label}」</h3>
+          <h3>問{voice.host}：關於「{kw.get(selected)?.label}」</h3>
           {questions.length === 0 ? (
             <p className="muted">這個線索詞底下暫時沒有可以問的。</p>
           ) : (
@@ -144,7 +145,7 @@ export function SoupView({ soup, state, onChange, onFinish, finishable = true, n
                       </span>
                       {asked && <ReplyBadge reply={q.reply} />}
                     </button>
-                    {asked && q.id !== lastAsked && <AnswerNotes q={q} state={state} />}
+                    {asked && q.id !== lastAsked && <AnswerNotes q={q} state={state} voice={voice} />}
                   </li>
                 );
               })}
@@ -152,9 +153,9 @@ export function SoupView({ soup, state, onChange, onFinish, finishable = true, n
           )}
           {last && (
             <div className="answer" key={last.id}>
-              <span className="who">溫伯</span>
+              <span className="who">{voice.host}</span>
               <ReplyBadge reply={last.reply} big />
-              {last.hesitant && <span className="pause">（他停頓了一下）</span>}
+              {last.hesitant && <span className="pause">（{voice.hostPronoun}停頓了一下）</span>}
               {last.say && <span className="said">「{last.say}」</span>}
               {(last.unlocks ?? []).some((id) => !seen.has(id)) && (
                 <span className="unlock">新線索詞：{(last.unlocks ?? []).map((id) => kw.get(id)?.label).join('、')}</span>
@@ -164,7 +165,7 @@ export function SoupView({ soup, state, onChange, onFinish, finishable = true, n
         </section>
 
         <section className="panel evidence" hidden={soup.evidence.length === 0}>
-          <h3>失物</h3>
+          <h3>{voice.evidence}</h3>
           {soup.evidence.map((e) => (
             <div key={e.id} className={`ev-card${tea?.kind === 'inspect' ? ' hinted' : ''}`}>
               <div className="ev-name">{e.name}</div>
@@ -214,10 +215,10 @@ export function SoupView({ soup, state, onChange, onFinish, finishable = true, n
         <div className="board-head">
           <h3>推理板：湯底</h3>
           <button type="button" className="tea" onClick={pourTea} disabled={solved}>
-            🍵 跟溫伯喝杯茶{state.tea > 0 ? `（${state.tea}）` : ''}
+            {voice.hint.icon} {voice.hint.label}{state.tea > 0 ? `（${state.tea}）` : ''}
           </button>
         </div>
-        {tea && <TeaLine hint={tea} soup={soup} kw={kw} />}
+        {tea && <TeaLine hint={tea} soup={soup} kw={kw} voice={voice} />}
         <ol className="sentences">
           {soup.board.map((s) => {
             const done = state.solved.includes(s.id);
@@ -265,7 +266,7 @@ export function SoupView({ soup, state, onChange, onFinish, finishable = true, n
             );
           })}
         </ol>
-        {solved && !finishable && <p className="finish muted">每一句都對了。剩下的，等第七晚再說。</p>}
+        {solved && !finishable && <p className="finish muted">{voice.bigWaitSolved}</p>}
         {solved && finishable && (
           <div className="finish">
             <p>每一句都對了。</p>
@@ -286,13 +287,13 @@ export function SoupView({ soup, state, onChange, onFinish, finishable = true, n
   );
 }
 
-/** 問過的題目底下的小字：溫伯補的話、說謊的停頓、更正的標記。 */
-function AnswerNotes({ q, state }: { q: Question; state: SoupState }) {
+/** 問過的題目底下的小字：主持人補的話、說謊的停頓、更正的標記。 */
+function AnswerNotes({ q, state, voice }: { q: Question; state: SoupState; voice: StoryVoice }) {
   const autoFixed = q.corrects && (state.auto ?? []).includes(q.id);
   return (
     <>
-      {q.hesitant && <p className="say pause">（他停頓了一下）</p>}
-      {autoFixed && <p className="say lie">他那時候說了謊。</p>}
+      {q.hesitant && <p className="say pause">（{voice.hostPronoun}停頓了一下）</p>}
+      {autoFixed && <p className="say lie">{voice.hostPronoun}那時候說了謊。</p>}
       {q.say && <p className="say">「{q.say}」</p>}
     </>
   );
@@ -303,18 +304,18 @@ function ReplyBadge({ reply, big }: { reply: Question['reply']; big?: boolean })
   return <span className={`reply ${cls}${big ? ' big' : ''}`}>{reply}</span>;
 }
 
-function TeaLine({ hint, soup, kw }: { hint: Hint; soup: Soup; kw: Map<string, Keyword> }) {
+function TeaLine({ hint, soup, kw, voice }: { hint: Hint; soup: Soup; kw: Map<string, Keyword>; voice: StoryVoice }) {
   let text: string;
-  if (hint.kind === 'inspect') text = '失物你都仔細看過了嗎？每個地方都看看。';
+  if (hint.kind === 'inspect') text = voice.hintLines.inspect;
   else if (hint.kind === 'question') text = `要不要問問看：「${soup.questions.find((q) => q.id === hint.questionId)?.text}」`;
   else if (hint.kind === 'blank') {
     const n = soup.board.findIndex((s) => s.id === hint.sentenceId) + 1;
     text = `第 ${n} 句那一格，我會填「${kw.get(hint.keywordId)?.label}」。`;
-  } else if (hint.kind === 'later') text = '這件事……還不到時候。過幾個晚上再問我吧。';
-  else text = '都對了。喝完吧。';
+  } else if (hint.kind === 'later') text = voice.hintLines.later;
+  else text = voice.hintLines.done;
   return (
     <p className="tea-line">
-      <span className="who">溫伯</span>
+      <span className="who">{voice.host}</span>
       {text}
     </p>
   );

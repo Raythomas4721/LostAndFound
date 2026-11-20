@@ -1,7 +1,7 @@
 import { matches } from './conditions';
 import { minQuestions } from './solver';
 import { applyCorrections, askedCount, isSoupSolved, newSoupState, rate, type Rating, type SoupState } from './soup';
-import type { Choice, Ending, Line, Night, Soup } from './types';
+import type { Choice, Ending, Epilogue, Line, Night, Soup } from './types';
 
 /**
  * 一晚的流程：intro（開場）→ soup（湯面＋調查＋推理板）→ reveal（湯底）
@@ -140,6 +140,18 @@ function settleAfter(run: RunState, nights: readonly Night[]): RunState {
 
 export function pickEnding(endings: readonly Ending[], flags: readonly string[]): Ending | null {
   return endings.find((e) => matches(e.when, flags)) ?? null;
+}
+
+/** 尾聲：每個人只取第一條成立的。 */
+export function pickEpilogues(epilogues: readonly Epilogue[], flags: readonly string[]): Epilogue[] {
+  const seen = new Set<string>();
+  const out: Epilogue[] = [];
+  for (const ep of epilogues) {
+    if (seen.has(ep.who) || !matches(ep.when, flags)) continue;
+    seen.add(ep.who);
+    out.push(ep);
+  }
+  return out;
 }
 
 export function isRunState(x: unknown): x is RunState {

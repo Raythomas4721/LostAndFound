@@ -1,12 +1,11 @@
 // 用「亂問、亂填、卡住就喝茶」的玩家跑整輪，看每碗湯平均要問幾題、喝幾杯茶，以及結局分布。
 // 用法：npm run simulate -- --runs 300
-import { ENDINGS } from '../src/content/endings';
-import { NIGHTS } from '../src/content/nights';
+import { STORIES } from '../src/content/stories';
 import { teaHint } from '../src/engine/hints';
 import { advance, choose, currentStep, finishIntro, finishReveal, finishSoup, freeFor, newRun, pickEnding, setSoupStateFor, soupStateFor, type RunState } from '../src/engine/run';
 import { minQuestions } from '../src/engine/solver';
 import { ask, askedCount, availableQuestions, checkSentence, inspect, isSoupSolved, place, type SoupState } from '../src/engine/soup';
-import type { Soup } from '../src/engine/types';
+import type { Soup, Story } from '../src/engine/types';
 
 const runsArg = process.argv.indexOf('--runs');
 const RUNS = runsArg >= 0 ? Number(process.argv[runsArg + 1]) : 300;
@@ -55,53 +54,60 @@ function playSoup(soup: Soup, start: SoupState): { state: SoupState; tea: number
   return { state: s, tea };
 }
 
-const soupNights = NIGHTS.filter((n) => n.soup);
-const stats = new Map(soupNights.map((n) => [n.soup!.id, { asked: [] as number[], tea: [] as number[], unsolved: 0 }]));
-let finished = 0;
-const endingCounts = new Map<string, number>();
+/** 跑一本湯本；回傳是否每輪都走到了結局。 */
+function simulate(story: Story): boolean {
+  const NIGHTS = story.nights;
+  const soupNights = NIGHTS.filter((n) => n.soup);
+  const stats = new Map(soupNights.map((n) => [n.soup!.id, { asked: [] as number[], tea: [] as number[], unsolved: 0 }]));
+  let finished = 0;
+  const endingCounts = new Map<string, number>();
 
-for (let r = 0; r < RUNS; r++) {
-  let run: RunState = newRun();
-  for (let guard = 0; guard < 1000 && run.phase !== 'end'; guard++) {
-    const night = NIGHTS[run.night];
-    if (run.phase === 'intro') run = finishIntro(run, NIGHTS);
-    else if (run.phase === 'soup' && night.soup) {
-      const soup = night.soup;
-      const { state, tea } = playSoup(soup, soupStateFor(run, soup));
-      run = setSoupStateFor(run, soup, state);
-      const st = stats.get(soup.id)!;
-      st.asked.push(askedCount(state));
-      st.tea.push(tea);
-      if (!isSoupSolved(soup, state)) {
-        st.unsolved++;
-        break;
+  for (let r = 0; r < RUNS; r++) {
+    let run: RunState = newRun();
+    for (let guard = 0; guard < 1000 && run.phase !== 'end'; guard++) {
+      const night = NIGHTS[run.night];
+      if (run.phase === 'intro') run = finishIntro(run, NIGHTS);
+      else if (run.phase === 'soup' && night.soup) {
+        const soup = night.soup;
+        const { state, tea } = playSoup(soup, soupStateFor(run, soup));
+        run = setSoupStateFor(run, soup, state);
+        const st = stats.get(soup.id)!;
+        st.asked.push(askedCount(state));
+        st.tea.push(tea);
+        if (!isSoupSolved(soup, state)) {
+          st.unsolved++;
+          break;
+        }
+        run = finishSoup(run, NIGHTS);
+      } else if (run.phase === 'reveal') run = finishReveal(run, NIGHTS);
+      else if (run.phase === 'after') {
+        const step = currentStep(run, NIGHTS);
+        if (step?.kind === 'choice') run = choose(run, NIGHTS, pick(step.choice.options).id);
+        else run = advance(run, NIGHTS);
       }
-      run = finishSoup(run, NIGHTS);
-    } else if (run.phase === 'reveal') run = finishReveal(run, NIGHTS);
-    else if (run.phase === 'after') {
-      const step = currentStep(run, NIGHTS);
-      if (step?.kind === 'choice') run = choose(run, NIGHTS, pick(step.choice.options).id);
-      else run = advance(run, NIGHTS);
+    }
+    if (run.phase === 'end') {
+      finished++;
+      const e = pickEnding(story.endings, run.flags);
+      endingCounts.set(e?.title ?? '（沒有結局）', (endingCounts.get(e?.title ?? '（沒有結局）') ?? 0) + 1);
     }
   }
-  if (run.phase === 'end') {
-    finished++;
-    const e = pickEnding(ENDINGS, run.flags);
-    endingCounts.set(e?.title ?? '（沒有結局）', (endingCounts.get(e?.title ?? '（沒有結局）') ?? 0) + 1);
+
+  const avg = (xs: number[]) => (xs.length ? xs.reduce((a, b) => a + b, 0) / xs.length : 0);
+  console.log(`\n══ 《${story.title}》跑了 ${RUNS} 輪，走完 ${finished} 輪 ══`);
+  for (const night of soupNights) {
+    const soup = night.soup!;
+    const s = stats.get(soup.id)!;
+    const best = minQuestions(soup, freeFor(soup, NIGHTS))?.count ?? 0;
+    console.log(
+      `${night.title}「${soup.title}」：最少 ${best} 題｜亂問的玩家平均問 ${avg(s.asked).toFixed(1)} 題（共 ${soup.questions.length} 題）、提示 ${avg(s.tea).toFixed(1)} 次｜沒喝完 ${s.unsolved} 輪`,
+    );
   }
+  console.log('隨機選擇時的結局分布：');
+  for (const [title, n] of endingCounts) console.log(`  ${title}：${((n / RUNS) * 100).toFixed(0)}%`);
+  return finished === RUNS && !endingCounts.has('（沒有結局）');
 }
 
-const avg = (xs: number[]) => (xs.length ? xs.reduce((a, b) => a + b, 0) / xs.length : 0);
-console.log(`跑了 ${RUNS} 輪，走完 ${finished} 輪\n`);
-for (const night of soupNights) {
-  const soup = night.soup!;
-  const s = stats.get(soup.id)!;
-  const best = minQuestions(soup, freeFor(soup, NIGHTS))?.count ?? 0;
-  console.log(
-    `第${night.n}晚「${soup.title}」：最少 ${best} 題｜亂問的玩家平均問 ${avg(s.asked).toFixed(1)} 題（共 ${soup.questions.length} 題）、喝 ${avg(s.tea).toFixed(1)} 杯茶｜沒喝完 ${s.unsolved} 輪`,
-  );
-}
-console.log('\n隨機選擇時的結局分布：');
-for (const [title, n] of endingCounts) console.log(`  ${title}：${((n / RUNS) * 100).toFixed(0)}%`);
-
-if (finished < RUNS || endingCounts.has('（沒有結局）')) process.exit(1);
+let ok = true;
+for (const story of STORIES) ok = simulate(story) && ok;
+if (!ok) process.exit(1);

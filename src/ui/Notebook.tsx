@@ -1,17 +1,18 @@
 import { useState } from 'react';
 import type { RunState } from '../engine/run';
 import type { SoupState } from '../engine/soup';
-import type { Night, Soup } from '../engine/types';
+import type { Night, Soup, StoryVoice } from '../engine/types';
 
 interface Props {
   run: RunState;
   nights: readonly Night[];
   big: Soup | null;
+  voice: StoryVoice;
   onClose: () => void;
 }
 
 /** 筆記本：每碗小湯問過的題目，以及大湯的線索和問答。 */
-export function Notebook({ run, nights, big, onClose }: Props) {
+export function Notebook({ run, nights, big, voice, onClose }: Props) {
   const [tab, setTab] = useState<'soups' | 'big'>('soups');
   const played = nights.filter((n) => n.soup && n.soup.kind === 'small' && run.soups[n.soup.id]);
   const bigState = big ? run.soups[big.id] : undefined;
@@ -27,10 +28,10 @@ export function Notebook({ run, nights, big, onClose }: Props) {
         </div>
         <div className="tabs">
           <button type="button" className={tab === 'soups' ? 'active' : ''} onClick={() => setTab('soups')}>
-            每晚的湯
+            每{voice.unit}的湯
           </button>
           <button type="button" className={tab === 'big' ? 'active' : ''} onClick={() => setTab('big')}>
-            大湯：綠色鐵盒
+            大湯{big ? `：${big.title}` : ""}
           </button>
         </div>
         {tab === 'soups' ? (
@@ -43,12 +44,12 @@ export function Notebook({ run, nights, big, onClose }: Props) {
                   {n.title}・{n.soup!.title}
                   {run.ratings[n.soup!.id] && <span className="rating">{run.ratings[n.soup!.id]}</span>}
                 </h3>
-                <AskedList soup={n.soup!} state={run.soups[n.soup!.id]} />
+                <AskedList soup={n.soup!} state={run.soups[n.soup!.id]} voice={voice} />
               </div>
             ))
           )
         ) : run.bigClues.length === 0 ? (
-          <p className="muted">第一晚結束時，這一頁才會打開。</p>
+          <p className="muted">第一{voice.unit}結束時，這一頁才會打開。</p>
         ) : (
           <>
             <div className="nb-soup">
@@ -61,8 +62,8 @@ export function Notebook({ run, nights, big, onClose }: Props) {
             </div>
             {big && bigState && (
               <div className="nb-soup">
-                <h3>問過溫伯的事</h3>
-                <AskedList soup={big} state={bigState} />
+                <h3>問過{voice.host}的事</h3>
+                <AskedList soup={big} state={bigState} voice={voice} />
               </div>
             )}
           </>
@@ -72,7 +73,7 @@ export function Notebook({ run, nights, big, onClose }: Props) {
   );
 }
 
-function AskedList({ soup, state }: { soup: Soup; state: SoupState }) {
+function AskedList({ soup, state, voice }: { soup: Soup; state: SoupState; voice: StoryVoice }) {
   if (state.asked.length === 0) return <p className="muted">還沒問。</p>;
   const correctedIds = new Set(state.asked.flatMap((id) => soup.questions.find((q) => q.id === id)?.corrects ?? []));
   return (
@@ -85,7 +86,7 @@ function AskedList({ soup, state }: { soup: Soup; state: SoupState }) {
           <li key={id} className={struck ? 'struck' : ''}>
             {q.corrects && state.asked.includes(q.corrects) && <span className="nb-fix">更正</span>}
             {q.text} <b>{q.reply}</b>
-            {q.hesitant && <span className="muted">（他停頓了一下）</span>}
+            {q.hesitant && <span className="muted">（{voice.hostPronoun}停頓了一下）</span>}
             {q.say && <span className="muted">「{q.say}」</span>}
           </li>
         );

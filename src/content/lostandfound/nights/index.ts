@@ -1,4 +1,4 @@
-import type { Night } from '../../engine/types';
+import type { Night } from '../../../engine/types';
 import { night1 } from './night1';
 import { night2 } from './night2';
 import { night3 } from './night3';

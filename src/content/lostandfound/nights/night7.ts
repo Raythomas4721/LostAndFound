@@ -1,4 +1,4 @@
-import type { Night } from '../../engine/types';
+import type { Night } from '../../../engine/types';
 import { bigSoup } from '../bigSoup';
 
 const 溫伯 = '溫伯';

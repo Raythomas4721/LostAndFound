@@ -10,7 +10,8 @@
     "test": "vitest run",
     "typecheck": "tsc --noEmit",
     "validate": "tsx scripts/validate.ts",
-    "simulate": "tsx scripts/simulate.ts"
+    "simulate": "tsx scripts/simulate.ts",
+    "icons": "tsx scripts/make-icons.ts"
   },
   "dependencies": {
     "react": "^18.3.1",
