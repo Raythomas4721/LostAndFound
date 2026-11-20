@@ -31,6 +31,8 @@ export interface Question {
   hesitant?: boolean;
   /** 這題是哪一題的更正。出現之後，原本那題就會被藏起來；原本那題問過的話，會自動重新回答。 */
   corrects?: string;
+  /** 對質規則：說謊的題目，玩家手上有這些線索詞時，可以當場拆穿 */
+  contradictedBy?: string[];
 }
 
 export interface Hotspot {
@@ -79,6 +81,8 @@ export interface Soup {
   questions: Question[];
   board: Sentence[];
   reveal: Line[];
+  /** 限時來電規則：這碗湯是誰打進來的。有寫才會計算通話題數。 */
+  caller?: string;
 }
 
 export interface ChoiceOption {
@@ -194,9 +198,23 @@ export interface Story {
   /** localStorage 的 key；各本分開存 */
   saveKey: string;
   voice: StoryVoice;
+  /** 這本湯本的特殊玩法；沒寫就是基本玩法 */
+  rules?: StoryRules;
   nights: readonly Night[];
   endings: readonly Ending[];
   epilogues: readonly Epilogue[];
+}
+
+/**
+ * 每本湯本可以多一點自己的規則。全部都不會讓人卡死：
+ * - call：小湯裡有 caller 的碗，一通電話只能問幾題，問完對方掛斷，要回撥才能繼續
+ * - confront：大湯裡的謊話，手上有 contradictedBy 的線索詞時可以當場對質拆穿
+ * - flashlight：證物一開始是黑的，手電筒每碗只夠照幾個地方；每用一次提示，補一格電
+ */
+export interface StoryRules {
+  call?: { length: number; hangup: string; callback: string };
+  confront?: { label: string; broken: string; truthful: string; noproof: string; tip: string };
+  flashlight?: { battery: number; empty: string; refill: string };
 }
 
 /** 還沒開張的湯本：首頁先擺一張卡。 */

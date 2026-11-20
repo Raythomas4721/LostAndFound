@@ -1,7 +1,7 @@
 import { flagsIn, matches } from './conditions';
 import { freeFor, pickEnding } from './run';
 import { boardAnswers, freeKeywords, minQuestions, reachable } from './solver';
-import type { Ending, Epilogue, Night, Soup } from './types';
+import type { Ending, Epilogue, Night, Soup, StoryRules } from './types';
 
 export interface Issue {
   level: 'error' | 'warn';
@@ -127,6 +127,7 @@ export function validateNights(
   nights: readonly Night[],
   endings: readonly Ending[] = [],
   epilogues: readonly Epilogue[] = [],
+  rules?: StoryRules,
 ): { reports: SoupReport[]; issues: Issue[]; endingCounts: Record<string, number> } {
   const issues: Issue[] = [];
   const err = (where: string, message: string) => issues.push({ level: 'error', where, message });
@@ -165,6 +166,7 @@ export function validateNights(
 
   const reports = nights.flatMap((night) => (night.soup ? [validateSoup(night.soup, night.n, freeFor(night.soup, nights) ?? freeKeywords(night.soup))] : []));
   for (const r of reports) issues.push(...r.issues);
+  issues.push(...validateRules(nights, reports, rules));
 
   // ── 結局：每種選法都要有結局，每個結局都要走得到 ──
   const endingCounts: Record<string, number> = {};
@@ -186,4 +188,47 @@ export function validateNights(
   }
 
   return { reports, issues, endingCounts };
+}
+
+/**
+ * 特殊玩法的檢查：
+ * - 限時來電：每碗有 caller 的湯，一通電話的題數要夠拼出湯底（一通搞定是做得到的）
+ * - 對質：contradictedBy 只能寫在謊話上，線索詞要存在，而且在坦白之前就拿得到
+ * - 手電筒：電池至少一格
+ */
+export function validateRules(nights: readonly Night[], reports: readonly SoupReport[], rules: StoryRules | undefined): Issue[] {
+  const issues: Issue[] = [];
+  const err = (where: string, message: string) => issues.push({ level: 'error', where, message });
+  const warn = (where: string, message: string) => issues.push({ level: 'warn', where, message });
+
+  for (const night of nights) {
+    const soup = night.soup;
+    if (!soup) continue;
+    if (soup.caller && !rules?.call) warn(soup.id, '寫了 caller，但這本湯本沒有開限時來電');
+    if (rules?.call && soup.caller) {
+      const best = reports.find((r) => r.soupId === soup.id)?.minQuestions;
+      if (best != null && best > rules.call.length) err(soup.id, `最少要問 ${best} 題，一通電話只能問 ${rules.call.length} 題`);
+    }
+    const kw = new Set(soup.keywords.map((k) => k.id));
+    for (const q of soup.questions) {
+      if (!q.contradictedBy) continue;
+      if (!q.hesitant) err(soup.id, `題目 ${q.id} 不是謊話，不能寫 contradictedBy`);
+      if (!rules?.confront) warn(soup.id, `題目 ${q.id} 寫了 contradictedBy，但這本湯本沒有開對質`);
+      for (const id of q.contradictedBy) if (!kw.has(id)) err(soup.id, `題目 ${q.id} 的 contradictedBy 指到不存在的線索詞「${id}」`);
+    }
+    if (rules?.confront && soup.kind === 'big') {
+      // 坦白那一晚之前（含）拿得到的大湯線索詞：起始的 + 坦白前每一晚的 bigUnlocks
+      const confessAt = nights.findIndex((n) => (n.bigUnlocks ?? []).some((id) => soup.questions.some((q) => q.corrects && (q.requires ?? []).includes(id))));
+      const before = new Set(soup.start);
+      nights.slice(0, confessAt < 0 ? nights.length : confessAt).forEach((n) => (n.bigUnlocks ?? []).forEach((id) => before.add(id)));
+      for (const q of soup.questions) {
+        if (!q.hesitant) continue;
+        if (!q.contradictedBy?.length) warn(soup.id, `謊話 ${q.id} 沒有寫 contradictedBy，玩家沒辦法對質`);
+        else if (!q.contradictedBy.every((id) => before.has(id))) warn(soup.id, `謊話 ${q.id} 的證據要等坦白之後才拿得到，對質就沒有意義了`);
+      }
+    }
+  }
+  if (rules?.flashlight && rules.flashlight.battery < 1) err('手電筒', '電池至少要一格');
+  if (rules?.call && rules.call.length < 1) err('限時來電', '一通電話至少要能問一題');
+  return issues;
 }

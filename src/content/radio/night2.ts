@@ -9,6 +9,7 @@ const soup: Soup = {
   id: 'monitor',
   title: '監聽器裡的男人',
   kind: 'small',
+  caller: '林太太',
   surface: [
     { text: '凌晨兩點十五分。一個壓得很低的女人聲音。' },
     { who: 林太太, text: '我不知道該打給誰……每天兩點，我女兒房間的嬰兒監聽器裡，都有一個男人在說話。' },

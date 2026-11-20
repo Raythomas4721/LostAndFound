@@ -36,6 +36,10 @@ export const radio: Story = {
     endingNote: '換一種做法，最後一夜的三點零三分會不一樣。',
     unit: '夜',
   },
+  rules: {
+    // 聽眾還在線上，你邊聽邊在對講裡問老鍾。電話撐不了太久。
+    call: { length: 7, hangup: '嘟——電話斷了。', callback: '回撥' },
+  },
   nights: NIGHTS,
   endings: ENDINGS,
   epilogues: EPILOGUES,

@@ -54,14 +54,14 @@ export const bigSoup: Soup = {
   evidence: [],
   questions: [
     // 下山了（謊）
-    { id: 'd-really', topic: 'downhill', text: '小鄒真的下山了嗎？', reply: '是', hesitant: true, say: '……下山了。' },
+    { id: 'd-really', topic: 'downhill', text: '小鄒真的下山了嗎？', reply: '是', hesitant: true, contradictedBy: ['backpath'], say: '……下山了。' },
     { id: 'd-really-t', topic: 'downhill', text: '小鄒真的下山了嗎？', reply: '不是', corrects: 'd-really', requires: ['confession'], say: '他在後山的茶寮。' },
     // 一個一個不見
     { id: 'v-ghost', topic: 'vanish', text: '房客是被鬼帶走的嗎？', reply: '不是' },
     { id: 'v-dead', topic: 'vanish', text: '不見的房客死了嗎？', reply: '不是' },
     { id: 'v-self', topic: 'vanish', text: '房客是自己走的嗎？', reply: '是' },
     { id: 'v-plan', topic: 'vanish', text: '他們是事先說好要不見的嗎？', reply: '是', say: '每一個都說好了。', unlocks: ['invited'] },
-    { id: 'v-safe', topic: 'vanish', text: '不見的人都平安嗎？', reply: '不重要', hesitant: true, say: '那不重要。' },
+    { id: 'v-safe', topic: 'vanish', text: '不見的人都平安嗎？', reply: '不重要', hesitant: true, contradictedBy: ['mrsjiang'], say: '那不重要。' },
     { id: 'v-safe-t', topic: 'vanish', text: '不見的人都平安嗎？', reply: '是', corrects: 'v-safe', requires: ['confession'], say: '都平安。有吃有睡。' },
     // 每天早上
     { id: 'm-night', topic: 'morning', text: '房客都是半夜走的嗎？', reply: '是', say: '天亮前，雨最小的時候。' },
@@ -75,24 +75,24 @@ export const bigSoup: Soup = {
     { id: 'th-food', topic: 'teahouse', text: '每天晚上，有人送吃的去茶寮嗎？', reply: '是', say: '我送。' },
     { id: 'th-ge', topic: 'teahouse', text: '葛老先生也在茶寮嗎？', reply: '是', requires: ['ge'] },
     // 小鄒（謊）
-    { id: 'z-know', topic: 'zou', text: '老闆娘，你認識小鄒嗎？', reply: '不是', hesitant: true, say: '……一個學生。' },
+    { id: 'z-know', topic: 'zou', text: '老闆娘，你認識小鄒嗎？', reply: '不是', hesitant: true, contradictedBy: ['backpath'], say: '……一個學生。' },
     { id: 'z-know-t', topic: 'zou', text: '老闆娘，你認識小鄒嗎？', reply: '是', corrects: 'z-know', requires: ['confession'], say: '他是小晴的同學。那天晚上，他們一起走路回家。' },
     // 江家（謊）
-    { id: 'j-know', topic: 'mrjiang', text: '江先生知道太太去哪裡了嗎？', reply: '不是', hesitant: true, say: '……他也在找。' },
+    { id: 'j-know', topic: 'mrjiang', text: '江先生知道太太去哪裡了嗎？', reply: '不是', hesitant: true, contradictedBy: ['mrjiang'], say: '……他也在找。' },
     { id: 'j-know-t', topic: 'mrjiang', text: '江先生知道太太去哪裡了嗎？', reply: '是', corrects: 'j-know', requires: ['confession'], say: '他們夫妻是一起來幫我的。' },
     { id: 'mj-teacher', topic: 'mrsjiang', text: '江太太認識小晴嗎？', reply: '是', say: '她是小晴的導師。', unlocks: ['invited'] },
     { id: 'r-jiang', topic: 'raincoat', text: '江太太穿小晴的雨衣，是故意讓黎先生看到的嗎？', reply: '是', unlocks: ['scare'] },
     // 小晴（謊）
-    { id: 'x-sick', topic: 'xiaoqing', text: '小晴是生病過世的嗎？', reply: '是', hesitant: true, say: '……生病。' },
+    { id: 'x-sick', topic: 'xiaoqing', text: '小晴是生病過世的嗎？', reply: '是', hesitant: true, contradictedBy: ['xiaoqing'], say: '……生病。' },
     { id: 'x-sick-t', topic: 'xiaoqing', text: '小晴是生病過世的嗎？', reply: '不是', corrects: 'x-sick', requires: ['confession'], say: '她是被車撞的。' },
     { id: 'x-age', topic: 'xiaoqing', text: '小晴過世的時候還是小孩嗎？', reply: '是', say: '十二歲。' },
     // 黎先生（謊）
-    { id: 'l-know', topic: 'li', text: '老闆娘，你知道黎先生是誰嗎？', reply: '不是', hesitant: true, say: '一個客人。' },
+    { id: 'l-know', topic: 'li', text: '老闆娘，你知道黎先生是誰嗎？', reply: '不是', hesitant: true, contradictedBy: ['raincoat'], say: '一個客人。' },
     { id: 'l-know-t', topic: 'li', text: '老闆娘，你知道黎先生是誰嗎？', reply: '是', corrects: 'l-know', requires: ['confession'], say: '十年來，每一天都知道。' },
     { id: 'l-target', topic: 'li', text: '這一切都是做給黎先生看的嗎？', reply: '是', unlocks: ['scare'] },
     { id: 'l-free', topic: 'li', text: '黎先生是自己想來的嗎？', reply: '是也不是', say: '他以為他中了免費住宿。' },
     // 老闆娘（謊）
-    { id: 'bo-plan', topic: 'boss', text: '這一切是你安排的嗎？', reply: '不是', hesitant: true, say: '……我只是開民宿的。' },
+    { id: 'bo-plan', topic: 'boss', text: '這一切是你安排的嗎？', reply: '不是', hesitant: true, contradictedBy: ['mrjiang', 'backpath'], say: '……我只是開民宿的。' },
     { id: 'bo-plan-t', topic: 'boss', text: '這一切是你安排的嗎？', reply: '是', corrects: 'bo-plan', requires: ['confession'], say: '每一步。' },
     { id: 'bo-revenge', topic: 'boss', text: '老闆娘想報仇嗎？', reply: '不是', say: '如果我想，十年前就做了。', unlocks: ['revenge'] },
     { id: 'bo-sorry', topic: 'boss', text: '老闆娘想聽黎先生親口說些什麼嗎？', reply: '是', unlocks: ['confess'] },

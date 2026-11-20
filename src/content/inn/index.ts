@@ -35,6 +35,16 @@ export const inn: Story = {
     endingNote: '換一種做法，最後一個早上會不一樣。',
     unit: '夜',
   },
+  rules: {
+    // 老闆娘的謊比溫伯多。你不用等她坦白：拿你知道的事，當場跟她對質。
+    confront: {
+      label: '對質',
+      broken: '她沉默了很久。「……好。這一題，我說實話。」',
+      truthful: '「這一題，我沒有騙你。」她看著你，一點都沒有閃躲。',
+      noproof: '「你有證據嗎？」她笑了一下，繼續擦杯子。',
+      tip: '覺得她在說謊？拿出你知道的事，點「對質」。猜錯也沒關係。',
+    },
+  },
   nights: NIGHTS,
   endings: ENDINGS,
   epilogues: EPILOGUES,

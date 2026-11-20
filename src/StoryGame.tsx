@@ -137,6 +137,7 @@ function SoupPhase({ story, big, run, soup, setRun }: { story: Story; big: Soup 
         key={shown.id}
         soup={shown}
         voice={story.voice}
+        rules={story.rules}
         state={soupStateFor(run, shown)}
         onChange={update(shown)}
         onFinish={() => setRun(finishSoup(run, story.nights))}
@@ -174,6 +175,7 @@ function RatingLine({ story, run, soup }: { story: Story; run: RunState; soup: S
   return (
     <p className="rating-line">
       問了 {askedCount(state)} 題（最少 {best} 題）・<b>{run.ratings[soup.id]}</b>
+      {story.rules?.call && soup.caller && <>・{state.calls ? `回撥了 ${state.calls} 次` : '一通搞定'}</>}
     </p>
   );
 }

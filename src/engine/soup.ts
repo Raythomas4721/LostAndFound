@@ -12,6 +12,11 @@ export interface SoupState {
   tea: number;
   /** 溫伯坦白後自動重新回答的題目 */
   auto?: string[];
+  /** 限時來電：這一通已經問了幾題、回撥過幾次 */
+  callAsked?: number;
+  calls?: number;
+  /** 對質：被當場拆穿的謊話 id */
+  confronted?: string[];
 }
 
 export function newSoupState(soup: Soup): SoupState {
@@ -29,9 +34,15 @@ export function isAvailable(q: Question, unlocked: readonly string[]): boolean {
   return unlocked.includes(q.topic) && (q.requires ?? []).every((id) => unlocked.includes(id));
 }
 
+/** 跟 isAvailable 一樣，但被對質拆穿的謊話，它的更正版不用等坦白就出現。 */
+export function isOpen(q: Question, state: SoupState): boolean {
+  if (isAvailable(q, state.unlocked)) return true;
+  return !!q.corrects && (state.confronted ?? []).includes(q.corrects) && state.unlocked.includes(q.topic);
+}
+
 /** 目前看得到的題目（含已經問過的）。被更正過的題目會換成更正後的版本。 */
 export function availableQuestions(soup: Soup, state: SoupState): Question[] {
-  const open = soup.questions.filter((q) => isAvailable(q, state.unlocked));
+  const open = soup.questions.filter((q) => isOpen(q, state));
   const corrected = new Set(open.flatMap((q) => (q.corrects ? [q.corrects] : [])));
   return open.filter((q) => !corrected.has(q.id));
 }
@@ -67,7 +78,7 @@ export function inspect(soup: Soup, state: SoupState, hotspotId: string): SoupSt
 export function ask(soup: Soup, state: SoupState, questionId: string): SoupState {
   if (state.asked.includes(questionId)) return state;
   const q = soup.questions.find((x) => x.id === questionId);
-  if (!q || !isAvailable(q, state.unlocked)) return state;
+  if (!q || !isOpen(q, state)) return state;
   return { ...state, asked: [...state.asked, questionId], unlocked: addAll(state.unlocked, q.unlocks) };
 }
 

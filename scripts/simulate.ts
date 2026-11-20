@@ -4,8 +4,9 @@ import { STORIES } from '../src/content/stories';
 import { teaHint } from '../src/engine/hints';
 import { advance, choose, currentStep, finishIntro, finishReveal, finishSoup, freeFor, newRun, pickEnding, setSoupStateFor, soupStateFor, type RunState } from '../src/engine/run';
 import { minQuestions } from '../src/engine/solver';
-import { ask, askedCount, availableQuestions, checkSentence, inspect, isSoupSolved, place, type SoupState } from '../src/engine/soup';
-import type { Soup, Story } from '../src/engine/types';
+import { askWith, callBack, hungUp, inspectWith } from '../src/engine/rules';
+import { askedCount, availableQuestions, checkSentence, isSoupSolved, place, type SoupState } from '../src/engine/soup';
+import type { Soup, Story, StoryRules } from '../src/engine/types';
 
 const runsArg = process.argv.indexOf('--runs');
 const RUNS = runsArg >= 0 ? Number(process.argv[runsArg + 1]) : 300;
@@ -17,7 +18,9 @@ const pick = <T,>(xs: readonly T[]): T => xs[Math.floor(rand() * xs.length)];
 
 const progress = (s: SoupState) => s.asked.length + s.inspected.length + s.solved.length;
 
-function playSoup(soup: Soup, start: SoupState): { state: SoupState; tea: number } {
+function playSoup(soup: Soup, start: SoupState, rules: StoryRules | undefined): { state: SoupState; tea: number } {
+  const ask = (st: SoupState, id: string) => askWith(soup, hungUp(soup, st, rules) ? callBack(st) : st, id, rules);
+  const inspect = (st: SoupState, id: string) => inspectWith(soup, st, id, rules);
   let s = start;
   let tea = 0;
   let idle = 0;
@@ -26,9 +29,10 @@ function playSoup(soup: Soup, start: SoupState): { state: SoupState; tea: number
     if (idle >= PATIENCE) {
       idle = 0;
       tea++;
+      s = { ...s, tea: s.tea + 1 };
       const h = teaHint(soup, s);
-      if (h.kind === 'inspect') for (const e of soup.evidence) for (const hs of e.hotspots) s = inspect(soup, s, hs.id);
-      else if (h.kind === 'question') s = ask(soup, s, h.questionId);
+      if (h.kind === 'inspect') for (const e of soup.evidence) for (const hs of e.hotspots) s = inspect(s, hs.id);
+      else if (h.kind === 'question') s = ask(s, h.questionId);
       else if (h.kind === 'blank') {
         s = place(soup, s, h.blankId, h.keywordId);
         s = checkSentence(soup, s, h.sentenceId).state;
@@ -38,8 +42,8 @@ function playSoup(soup: Soup, start: SoupState): { state: SoupState; tea: number
     const roll = rand();
     const unasked = availableQuestions(soup, s).filter((q) => !s.asked.includes(q.id));
     const uninspected = soup.evidence.flatMap((e) => e.hotspots).filter((h) => !s.inspected.includes(h.id));
-    if (roll < 0.15 && uninspected.length) s = inspect(soup, s, pick(uninspected).id);
-    else if (roll < 0.65 && unasked.length) s = ask(soup, s, pick(unasked).id);
+    if (roll < 0.15 && uninspected.length) s = inspect(s, pick(uninspected).id);
+    else if (roll < 0.65 && unasked.length) s = ask(s, pick(unasked).id);
     else {
       const open = soup.board.filter((x) => !s.solved.includes(x.id));
       const sentence = pick(open);
@@ -69,7 +73,7 @@ function simulate(story: Story): boolean {
       if (run.phase === 'intro') run = finishIntro(run, NIGHTS);
       else if (run.phase === 'soup' && night.soup) {
         const soup = night.soup;
-        const { state, tea } = playSoup(soup, soupStateFor(run, soup));
+        const { state, tea } = playSoup(soup, soupStateFor(run, soup), story.rules);
         run = setSoupStateFor(run, soup, state);
         const st = stats.get(soup.id)!;
         st.asked.push(askedCount(state));

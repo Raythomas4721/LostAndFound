@@ -1,7 +1,8 @@
 import { useMemo, useState } from 'react';
 import { teaHint, type Hint } from '../engine/hints';
-import { ask, availableQuestions, checkSentence, inspect, isSoupSolved, place, type SoupState } from '../engine/soup';
-import { CATEGORIES, type Keyword, type Question, type Soup, type StoryVoice } from '../engine/types';
+import { askWith, battery, callBack, callLeft, canConfront, confront, inspectWith } from '../engine/rules';
+import { availableQuestions, checkSentence, isSoupSolved, place, type SoupState } from '../engine/soup';
+import { CATEGORIES, type Keyword, type Question, type Soup, type StoryRules, type StoryVoice } from '../engine/types';
 import { EvidenceArt, hasArt } from './art';
 import { LineView } from './Dialogue';
 import { play } from './sound';
@@ -9,6 +10,8 @@ import { play } from './sound';
 interface Props {
   soup: Soup;
   voice: StoryVoice;
+  /** 這本湯本的特殊玩法（限時來電、對質、手電筒） */
+  rules?: StoryRules;
   state: SoupState;
   onChange: (state: SoupState) => void;
   onFinish: () => void;
@@ -19,7 +22,7 @@ interface Props {
 
 type Feedback = { sentenceId: string; ok: boolean } | null;
 
-export function SoupView({ soup, voice, state, onChange, onFinish, finishable = true, note }: Props) {
+export function SoupView({ soup, voice, rules, state, onChange, onFinish, finishable = true, note }: Props) {
   const [selected, setSelected] = useState<string>(soup.start[0]);
   const [lastAsked, setLastAsked] = useState<string | null>(null);
   const [tea, setTea] = useState<Hint | null>(null);
@@ -27,11 +30,15 @@ export function SoupView({ soup, voice, state, onChange, onFinish, finishable = 
   const [feedback, setFeedback] = useState<Feedback>(null);
   const [surfaceOpen, setSurfaceOpen] = useState(state.asked.length === 0);
   const [seen, setSeen] = useState<Set<string>>(() => new Set(state.unlocked));
+  const [confrontMsg, setConfrontMsg] = useState<{ text: string; ok: boolean } | null>(null);
 
   const kw = useMemo(() => new Map(soup.keywords.map((k) => [k.id, k])), [soup]);
   const solved = isSoupSolved(soup, state);
   const questions = availableQuestions(soup, state).filter((q) => q.topic === selected);
   const highlighted = tea?.kind === 'question' ? tea.questionId : null;
+  const left = callLeft(soup, state, rules);
+  const hungUp = left === 0;
+  const bat = battery(soup, state, rules);
 
   const selectKeyword = (id: string) => {
     setSelected(id);
@@ -42,7 +49,8 @@ export function SoupView({ soup, voice, state, onChange, onFinish, finishable = 
   const soundFor = (before: SoupState, after: SoupState) => play(after.unlocked.length > before.unlocked.length ? 'unlock' : 'ask');
 
   const doAsk = (q: Question) => {
-    const next = ask(soup, state, q.id);
+    const next = askWith(soup, state, q.id, rules);
+    if (next === state) return;
     soundFor(state, next);
     onChange(next);
     setLastAsked(q.id);
@@ -51,7 +59,8 @@ export function SoupView({ soup, voice, state, onChange, onFinish, finishable = 
 
   const doInspect = (hotspotId: string) => {
     if (state.inspected.includes(hotspotId)) return;
-    const next = inspect(soup, state, hotspotId);
+    const next = inspectWith(soup, state, hotspotId, rules);
+    if (next === state) return;
     soundFor(state, next);
     onChange(next);
     if (tea?.kind === 'inspect') setTea(null);
@@ -69,6 +78,25 @@ export function SoupView({ soup, voice, state, onChange, onFinish, finishable = 
       play(result.result === 'correct' ? 'correct' : 'wrong');
     } else setFeedback(null);
     if (tea?.kind === 'blank' && result.result === 'correct') setTea(null);
+  };
+
+  const redial = () => {
+    play('ask');
+    onChange(callBack(state));
+  };
+
+  const doConfront = (q: Question) => {
+    if (!rules?.confront) return;
+    const r = confront(soup, state, q.id);
+    if (r.result === 'broken') {
+      const fix = soup.questions.find((x) => x.corrects === q.id);
+      play('unlock');
+      onChange(r.state);
+      setConfrontMsg({ ok: true, text: rules.confront.broken + (fix ? `「${fix.text}」${fix.reply}。${fix.say ?? ''}` : '') });
+    } else {
+      play('wrong');
+      setConfrontMsg({ ok: false, text: r.result === 'truthful' ? rules.confront.truthful : rules.confront.noproof });
+    }
   };
 
   const pourTea = () => {
@@ -131,6 +159,20 @@ export function SoupView({ soup, voice, state, onChange, onFinish, finishable = 
 
         <section className="panel ask">
           <h3>問{voice.host}：關於「{kw.get(selected)?.label}」</h3>
+          {left !== null && !hungUp && (
+            <p className="call-meter">
+              📞 {soup.caller}還在線上：這通還能問 <b>{left}</b> 題
+            </p>
+          )}
+          {hungUp && rules?.call && (
+            <div className="hungup">
+              <span>{rules.call.hangup}</span>
+              <button type="button" className="ghost" onClick={redial}>
+                ☎ {rules.call.callback}
+              </button>
+            </div>
+          )}
+          {rules?.confront && soup.kind === 'big' && <p className="rule-tip">{rules.confront.tip}</p>}
           {questions.length === 0 ? (
             <p className="muted">這個線索詞底下暫時沒有可以問的。</p>
           ) : (
@@ -139,7 +181,7 @@ export function SoupView({ soup, voice, state, onChange, onFinish, finishable = 
                 const asked = state.asked.includes(q.id);
                 return (
                   <li key={q.id}>
-                    <button type="button" className={`question${asked ? ' asked' : ''}${highlighted === q.id ? ' hinted' : ''}${q.corrects ? ' corrected' : ''}`} onClick={() => doAsk(q)} disabled={asked}>
+                    <button type="button" className={`question${asked ? ' asked' : ''}${highlighted === q.id ? ' hinted' : ''}${q.corrects ? ' corrected' : ''}`} onClick={() => doAsk(q)} disabled={asked || hungUp}>
                       <span className="q-text">
                         {q.corrects && state.asked.includes(q.corrects) && <span className="fix-tag">更正</span>}
                         {q.text}
@@ -147,10 +189,21 @@ export function SoupView({ soup, voice, state, onChange, onFinish, finishable = 
                       {asked && <ReplyBadge reply={q.reply} />}
                     </button>
                     {asked && q.id !== lastAsked && <AnswerNotes q={q} state={state} voice={voice} />}
+                    {canConfront(soup, state, q.id, rules) && (
+                      <button type="button" className="confront" onClick={() => doConfront(q)}>
+                        {rules?.confront?.label}
+                      </button>
+                    )}
                   </li>
                 );
               })}
             </ul>
+          )}
+          {confrontMsg && (
+            <p className={`confront-msg${confrontMsg.ok ? ' ok' : ''}`}>
+              <span className="who">{voice.host}</span>
+              {confrontMsg.text}
+            </p>
           )}
           {last && (
             <div className="answer" key={last.id}>
@@ -167,12 +220,18 @@ export function SoupView({ soup, voice, state, onChange, onFinish, finishable = 
 
         <section className="panel evidence" hidden={soup.evidence.length === 0}>
           <h3>{voice.evidence}</h3>
+          {bat !== null && (
+            <p className="battery" aria-label={`手電筒還剩 ${bat} 格電`}>
+              🔦 {bat > 0 ? '●'.repeat(Math.min(bat, 6)) : rules?.flashlight?.empty}
+            </p>
+          )}
           {soup.evidence.map((e) => (
             <div key={e.id} className={`ev-card${tea?.kind === 'inspect' ? ' hinted' : ''}`}>
               <div className="ev-name">{e.name}</div>
               {e.art && hasArt(e.art) && (
-                <div className="ev-stage">
+                <div className={`ev-stage${bat !== null ? ' dark' : ''}`}>
                   <EvidenceArt id={e.art} title={e.name} />
+                  {bat !== null && <LitLayer art={e.art} title={e.name} spots={e.hotspots.filter((h) => state.inspected.includes(h.id) && h.at).map((h) => h.at!)} />}
                   {/* 插畫上的熱點只是滑鼠的捷徑；鍵盤和螢幕閱讀器用下面那排按鈕 */}
                   {e.hotspots.map((h) =>
                     h.at ? (
@@ -201,7 +260,7 @@ export function SoupView({ soup, voice, state, onChange, onFinish, finishable = 
                       {h.label}
                     </p>
                   ) : (
-                    <button type="button" key={h.id} className="hs-btn" onClick={() => doInspect(h.id)}>
+                    <button type="button" key={h.id} className="hs-btn" onClick={() => doInspect(h.id)} disabled={bat === 0}>
                       細看{h.name}
                     </button>
                   ),
@@ -219,7 +278,7 @@ export function SoupView({ soup, voice, state, onChange, onFinish, finishable = 
             {voice.hint.icon} {voice.hint.label}{state.tea > 0 ? `（${state.tea}）` : ''}
           </button>
         </div>
-        {tea && <TeaLine hint={tea} soup={soup} kw={kw} voice={voice} />}
+        {tea && <TeaLine hint={tea} soup={soup} kw={kw} voice={voice} extra={bat !== null ? rules?.flashlight?.refill : undefined} />}
         <ol className="sentences">
           {soup.board.map((s) => {
             const done = state.solved.includes(s.id);
@@ -305,7 +364,7 @@ function ReplyBadge({ reply, big }: { reply: Question['reply']; big?: boolean })
   return <span className={`reply ${cls}${big ? ' big' : ''}`}>{reply}</span>;
 }
 
-function TeaLine({ hint, soup, kw, voice }: { hint: Hint; soup: Soup; kw: Map<string, Keyword>; voice: StoryVoice }) {
+function TeaLine({ hint, soup, kw, voice, extra }: { hint: Hint; soup: Soup; kw: Map<string, Keyword>; voice: StoryVoice; extra?: string }) {
   let text: string;
   if (hint.kind === 'inspect') text = voice.hintLines.inspect;
   else if (hint.kind === 'question') text = `要不要問問看：「${soup.questions.find((q) => q.id === hint.questionId)?.text}」`;
@@ -318,6 +377,18 @@ function TeaLine({ hint, soup, kw, voice }: { hint: Hint; soup: Soup; kw: Map<st
     <p className="tea-line">
       <span className="who">{voice.host}</span>
       {text}
+      {extra && <span className="tea-extra">{extra}</span>}
     </p>
+  );
+}
+
+/** 手電筒照過的地方：同一張插畫疊一層亮的，只露出照過的圓。 */
+function LitLayer({ art, title, spots }: { art: string; title: string; spots: [number, number][] }) {
+  if (spots.length === 0) return null;
+  const mask = spots.map(([x, y]) => `radial-gradient(circle at ${x}% ${y}%, #000 0, #000 16%, transparent 30%)`).join(', ');
+  return (
+    <div className="ev-lit" style={{ maskImage: mask, WebkitMaskImage: mask }} aria-hidden="true">
+      <EvidenceArt id={art} title={title} />
+    </div>
   );
 }

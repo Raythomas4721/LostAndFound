@@ -16,7 +16,7 @@ describe('湯館書架', () => {
 
   for (const story of STORIES) {
     it(`《${story.title}》每碗湯都解得開、每個結局都走得到`, () => {
-      const { issues } = validateNights(story.nights, story.endings, story.epilogues);
+      const { issues } = validateNights(story.nights, story.endings, story.epilogues, story.rules);
       expect(issues.filter((x) => x.level === 'error')).toEqual([]);
     });
 

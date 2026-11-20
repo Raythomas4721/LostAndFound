@@ -8,7 +8,7 @@ let totalWarns = 0;
 for (const story of STORIES) {
   const { nights, endings, epilogues, voice } = story;
   console.log(`\n══ 《${story.title}》（${story.genre}，${nights.length} ${voice.unit}）══`);
-  const { reports, issues, endingCounts } = validateNights(nights, endings, epilogues);
+  const { reports, issues, endingCounts } = validateNights(nights, endings, epilogues, story.rules);
 
   for (const r of reports) {
     const night = nights.find((n) => n.soup?.id === r.soupId)!;

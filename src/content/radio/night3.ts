@@ -9,6 +9,7 @@ const soup: Soup = {
   id: 'flashlight',
   title: '門口的手電筒',
   kind: 'small',
+  caller: '阿傑',
   surface: [
     { text: '第三夜，三點零三分。熱線沒有響。' },
     { text: '老鍾盯著那顆燈，一直等到三點十分。它沒有亮。' },

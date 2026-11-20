@@ -36,6 +36,10 @@ export const school: Story = {
     endingNote: '換一種做法，最後一次點名會不一樣。',
     unit: '夜',
   },
+  rules: {
+    // 夜裡的學校是暗的。手電筒的電，每一碗只夠照兩個地方；去找廖伯，他會塞給你一顆電池。
+    flashlight: { battery: 2, empty: '手電筒沒電了。去找廖伯拿電池。', refill: '廖伯塞了一顆電池給你。' },
+  },
   nights: NIGHTS,
   endings: ENDINGS,
   epilogues: EPILOGUES,

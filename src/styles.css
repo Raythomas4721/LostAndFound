@@ -1256,3 +1256,103 @@ button.story-card:focus-visible {
     bottom: calc(16px + env(safe-area-inset-bottom));
   }
 }
+
+/* ── 特殊玩法 ── */
+
+/* 限時來電 */
+.call-meter {
+  margin: -4px 0 10px;
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+
+.call-meter b {
+  color: var(--lamp);
+  font-size: 1rem;
+}
+
+.hungup {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin: -4px 0 10px;
+  padding: 8px 12px;
+  border: 1px dashed var(--no);
+  border-radius: 6px;
+  color: var(--no);
+}
+
+/* 對質 */
+.rule-tip {
+  margin: -4px 0 10px;
+  font-size: 0.82rem;
+  color: var(--muted);
+}
+
+.confront {
+  margin: 4px 0 2px 10px;
+  padding: 2px 12px;
+  font-size: 0.8rem;
+  border-radius: 999px;
+  border: 1px solid var(--no);
+  background: transparent;
+  color: var(--no);
+}
+
+.confront:hover {
+  background: var(--no);
+  color: #1d1010;
+}
+
+.confront-msg {
+  margin: 10px 0 0;
+  padding: 8px 12px;
+  border-left: 3px solid var(--no);
+  background: var(--panel2);
+  font-size: 0.92rem;
+}
+
+.confront-msg.ok {
+  border-left-color: var(--yes);
+}
+
+.confront-msg .who {
+  margin-right: 8px;
+  color: var(--lamp);
+  font-weight: 700;
+}
+
+/* 手電筒：插畫整張變暗，照過的地方疊一層亮的 */
+.battery {
+  margin: -4px 0 6px;
+  font-size: 0.85rem;
+  color: var(--lamp);
+  letter-spacing: 0.15em;
+}
+
+.ev-stage.dark > .ev-art {
+  filter: brightness(0.13) saturate(0.4);
+}
+
+.ev-lit {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.ev-lit .ev-art {
+  filter: sepia(0.25) brightness(1.05);
+}
+
+.tea-extra {
+  display: block;
+  margin-top: 4px;
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+
+.hs-btn:disabled {
+  opacity: 0.45;
+}

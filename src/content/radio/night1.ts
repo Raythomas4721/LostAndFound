@@ -9,6 +9,7 @@ const soup: Soup = {
   id: 'parrot',
   title: '點給陳先生的歌',
   kind: 'small',
+  caller: '小苡',
   surface: [
     { text: '凌晨一點十二分，第一通電話。是一個年輕女孩。' },
     { who: 小苡, text: '我想點一首〈港邊的燈〉，給陳先生。' },
