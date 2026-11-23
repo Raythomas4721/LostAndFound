@@ -243,6 +243,8 @@ export interface StoryVoice {
   endingNote: string;
   /** 「第一晚」之類的叫法：晚、夜、天 */
   unit: string;
+  /** 回答「不重要」又沒有補充時，主持人隨口說的一句話（亂問也有回應） */
+  quips?: string[];
 }
 
 export interface Story {

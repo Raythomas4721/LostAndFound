@@ -6,8 +6,8 @@ import { night1 as radioNight1 } from '../src/content/radio/night1';
 import { school } from '../src/content/school';
 import { night1 as schoolNight1 } from '../src/content/school/night1';
 import { askWith, battery, callBack, callLeft, canConfront, confront, hungUp, inspectWith } from '../src/engine/rules';
-import { ask, availableQuestions, checkSentence, inspect, isSoupSolved, newSoupState, visibleBoard, type SoupState } from '../src/engine/soup';
-import { advance, answerReverse, currentStep, newRun, type RunState } from '../src/engine/run';
+import { ask, availableQuestions, checkSentence, inspect, isSoupSolved, newSoupState, visibleBoard, wrongBlank, type SoupState } from '../src/engine/soup';
+import { advance, answerReverse, currentStep, newRun, recapLines, type RunState } from '../src/engine/run';
 import { tower } from '../src/content/tower';
 import { validateSoup } from '../src/engine/validate';
 import { night1 as barNight1 } from '../src/content/bar/night1';
@@ -162,5 +162,28 @@ describe('進程驚喜', () => {
     const next = advance(run, nights);
     expect(next.phase).toBe('intro');
     expect(next.night).toBe(n + 1);
+  });
+});
+
+describe('輕鬆的小改善', () => {
+  it('同一句填錯會記次數，並找得到哪一格不對', () => {
+    const soup = radio.nights[0].soup!;
+    const sentence = soup.board[0];
+    const blank = sentence.blanks[0];
+    const decoy = soup.keywords.find((k) => k.category === blank.category && k.id !== blank.answer)!;
+    let s: SoupState = { ...newSoupState(soup), unlocked: soup.keywords.map((k) => k.id) };
+    for (const b of sentence.blanks) s = { ...s, placements: { ...s.placements, [b.id]: b.id === blank.id ? decoy.id : b.answer } };
+    s = checkSentence(soup, s, sentence.id).state;
+    s = checkSentence(soup, s, sentence.id).state;
+    expect(s.misses?.[sentence.id]).toBe(2);
+    expect(wrongBlank(soup, s, sentence.id)).toBe(blank.id);
+  });
+
+  it('前情提要：剛開始不播；中途回來會說停在哪裡、最近的決定', () => {
+    expect(recapLines(newRun(), tower.nights, '夜')).toEqual([]);
+    const run: RunState = { ...newRun(), night: 2, phase: 'intro', choices: { 'c-dog': tower.nights[0].after.flatMap((st) => (st.kind === 'choice' ? st.choice.options : []))[0]?.id ?? '' }, bigClues: ['甲', '乙', '丙', '丁'] };
+    const lines = recapLines(run, tower.nights, '夜').map((l) => l.text);
+    expect(lines[0]).toContain(tower.nights[2].title);
+    expect(lines.filter((t) => t.startsWith('・'))).toHaveLength(3);
   });
 });

@@ -19,7 +19,12 @@ export interface SoupState {
   confronted?: string[];
   /** 插播：湯面已經翻轉 */
   twisted?: boolean;
+  /** 每一句填錯過幾次；錯兩次以上，主持人會提示哪一格怪怪的 */
+  misses?: Record<string, number>;
 }
+
+/** 填錯幾次之後，主持人會主動提示。 */
+export const NUDGE_AFTER = 2;
 
 export function newSoupState(soup: Soup): SoupState {
   return { unlocked: [...soup.start], asked: [], inspected: [], placements: {}, solved: [], tea: 0 };
@@ -121,8 +126,14 @@ export function checkSentence(soup: Soup, state: SoupState, sentenceId: string):
   if (state.solved.includes(sentenceId)) return { state, result: 'correct' };
   if (sentence.blanks.some((b) => !state.placements[b.id])) return { state, result: 'incomplete' };
   const ok = sentence.blanks.every((b) => state.placements[b.id] === b.answer);
-  if (!ok) return { state, result: 'wrong' };
+  if (!ok) return { state: { ...state, misses: { ...state.misses, [sentenceId]: (state.misses?.[sentenceId] ?? 0) + 1 } }, result: 'wrong' };
   return { state: maybeTwist(soup, { ...state, solved: [...state.solved, sentenceId] }), result: 'correct' };
+}
+
+/** 填錯的句子裡，第一個不對的空格（給溫和的提示用，不說正解）。 */
+export function wrongBlank(soup: Soup, state: SoupState, sentenceId: string): string | null {
+  const sentence = soup.board.find((s) => s.id === sentenceId);
+  return sentence?.blanks.find((b) => state.placements[b.id] && state.placements[b.id] !== b.answer)?.id ?? null;
 }
 
 export function isSoupSolved(soup: Soup, state: SoupState): boolean {

@@ -1647,3 +1647,16 @@ button.story-card:focus-visible {
     animation: none;
   }
 }
+
+/* 推理板連錯兩次：主持人的溫和提示 */
+.nudge {
+  display: block;
+  margin-top: 4px;
+  font-size: 0.88rem;
+  color: var(--lamp);
+}
+
+.nudge .who {
+  margin-right: 6px;
+  font-weight: 700;
+}

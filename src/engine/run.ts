@@ -163,6 +163,40 @@ function settleAfter(run: RunState, nights: readonly Night[]): RunState {
   return { ...next, night: nextIndex, phase: 'intro', step: 0, picked: null };
 }
 
+/**
+ * 前情提要：隔幾天回來時，先用幾句話說上次停在哪裡、最近做了什麼決定、筆記本最後記了什麼。
+ * 剛開始的存檔（第一晚開場）不需要提要，回傳空陣列。
+ */
+export function recapLines(run: RunState, nights: readonly Night[], unit: string): Line[] {
+  const night = currentNight(run, nights);
+  if (!night || (run.night === 0 && run.phase === 'intro')) return [];
+  const lines: Line[] = [];
+  const soup = night.soup;
+  const where =
+    run.phase === 'intro'
+      ? '這一' + unit + '才剛開始。'
+      : run.phase === 'soup' && soup
+        ? (() => {
+            const s = soupStateFor(run, soup);
+            return `你正在喝「${soup.title}」：問了 ${askedCount(s)} 題，推理板填對 ${s.solved.length} / ${soup.board.filter((x) => !x.twist || s.twisted).length} 句。`;
+          })()
+        : run.phase === 'reveal' && soup
+          ? `「${soup.title}」剛喝完，湯底還沒聽完。`
+          : '喝完湯之後，事情還沒說完。';
+  lines.push({ text: `上次，你停在${night.title}。${where}` });
+
+  // 最近一次的選擇（照晚上的順序找最後一個做過的）
+  let last: string | null = null;
+  for (const n of nights.slice(0, run.night + 1))
+    for (const step of n.after)
+      if (step.kind === 'choice' && run.choices[step.choice.id]) last = step.choice.options.find((o) => o.id === run.choices[step.choice.id])?.text ?? last;
+  if (last) lines.push({ text: `你最近一次的決定：${last}` });
+
+  const clues = run.bigClues.slice(-3);
+  if (clues.length) lines.push({ text: '筆記本最後幾行寫著：' }, ...clues.map((c) => ({ text: `・${c}` })));
+  return lines;
+}
+
 export function pickEnding(endings: readonly Ending[], flags: readonly string[]): Ending | null {
   return endings.find((e) => matches(e.when, flags)) ?? null;
 }

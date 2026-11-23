@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
 import { teaHint, type Hint } from '../engine/hints';
 import { askWith, battery, callBack, callLeft, canConfront, confront, inspectWith } from '../engine/rules';
-import { availableQuestions, checkSentence, isSoupSolved, place, visibleBoard, type SoupState } from '../engine/soup';
+import { availableQuestions, checkSentence, isSoupSolved, NUDGE_AFTER, place, visibleBoard, wrongBlank, type SoupState } from '../engine/soup';
 import { CATEGORIES, type Keyword, type Question, type Soup, type StoryRules, type StoryVoice } from '../engine/types';
 import { EvidenceArt, hasArt } from './art';
 import { LineView } from './Dialogue';
@@ -24,7 +24,7 @@ type Feedback = { sentenceId: string; ok: boolean } | null;
 
 export function SoupView({ soup, voice: storyVoice, rules, state, onChange, onFinish, finishable = true, note }: Props) {
   // 換人回答的碗：回答的人、代名詞、對質的台詞都換掉
-  const voice: StoryVoice = soup.host ? { ...storyVoice, host: soup.host.name, hostPronoun: soup.host.pronoun } : storyVoice;
+  const voice: StoryVoice = soup.host ? { ...storyVoice, host: soup.host.name, hostPronoun: soup.host.pronoun, quips: undefined } : storyVoice;
   const confrontLines = rules?.confront ? { ...rules.confront, ...(soup.host?.confront ?? {}) } : undefined;
   const [twistShown, setTwistShown] = useState<string | null>(null);
   const [selected, setSelected] = useState<string>(soup.start[0]);
@@ -304,7 +304,7 @@ export function SoupView({ soup, voice: storyVoice, rules, state, onChange, onFi
               <span className="who">{answerer(last)}</span>
               <ReplyBadge reply={last.reply} big />
               {last.hesitant && <span className="pause">（{voice.hostPronoun}停頓了一下）</span>}
-              {last.say && <span className="said">「{last.say}」</span>}
+              {(last.say ?? quipFor(last, voice)) && <span className="said">「{last.say ?? quipFor(last, voice)}」</span>}
               {(last.unlocks ?? []).some((id) => !seen.has(id)) && (
                 <span className="unlock">
                   新線索詞：
@@ -421,6 +421,7 @@ export function SoupView({ soup, voice: storyVoice, rules, state, onChange, onFi
                 })}
                 {done && <span className="ok">✔</span>}
                 {fb && !fb.ok && <span className="no">這句還不對</span>}
+                {fb && !fb.ok && (state.misses?.[s.id] ?? 0) >= NUDGE_AFTER && <Nudge soup={soup} state={state} sentenceId={s.id} kw={kw} voice={voice} />}
               </li>
             );
           })}
@@ -460,8 +461,27 @@ function AnswerNotes({ q, state, voice }: { q: Question; state: SoupState; voice
     <>
       {q.hesitant && <p className="say pause">（{voice.hostPronoun}停頓了一下）</p>}
       {autoFixed && <p className="say lie">{voice.hostPronoun}那時候說了謊。</p>}
-      {q.say && <p className="say">「{q.say}」</p>}
+      {(q.say ?? quipFor(q, voice)) && <p className="say">「{q.say ?? quipFor(q, voice)}」</p>}
     </>
+  );
+}
+
+/** 「不重要」又沒有補充的題目：主持人隨口一句。用題目 id 挑，同一題每次都一樣。證人回答的不算。 */
+function quipFor(q: Question, voice: StoryVoice): string | undefined {
+  if (q.reply !== '不重要' || q.say || q.who || !voice.quips?.length) return undefined;
+  let h = 0;
+  for (const ch of q.id) h = (h * 31 + ch.charCodeAt(0)) >>> 0;
+  return voice.quips[h % voice.quips.length];
+}
+
+/** 同一句填錯兩次以上：主持人指出哪一格怪怪的，但不說答案。 */
+function Nudge({ soup, state, sentenceId, kw, voice }: { soup: Soup; state: SoupState; sentenceId: string; kw: Map<string, Keyword>; voice: StoryVoice }) {
+  const id = wrongBlank(soup, state, sentenceId);
+  if (!id) return null;
+  return (
+    <span className="nudge">
+      <span className="who">{voice.host}</span>「{kw.get(state.placements[id])?.label}」那一格，好像怪怪的。
+    </span>
   );
 }
 

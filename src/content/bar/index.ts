@@ -39,6 +39,7 @@ export const bar: Story = {
     summaryHeading: '這一週的吧台',
     endingNote: '換一種做法，雙人座會坐不一樣的人。',
     unit: '晚',
+    quips: ['不重要。這杯我請，換一題。', '我只說我看到的。這個，我沒看到什麼。', '不重要。冰塊都比這題重要。', '你在問我，還是在問你自己？', '這題，等你喝到第二杯再問。'],
   },
   rules: {
     witnesses: {

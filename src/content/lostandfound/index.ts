@@ -30,6 +30,7 @@ export const lostAndFound: Story = {
     summaryHeading: '這一週的湯',
     endingNote: '換一種做法，秋姨的最後一晚會不一樣。',
     unit: '晚',
+    quips: ['這題問得好。可惜不重要。', '嗯……這個跟湯底沒關係，跟我的血壓比較有關係。', '不重要。不過你會這樣想，表示你很細心。', '喝口茶，換個方向想想。', '四十年前，也有人這樣問過我。'],
   },
   nights: NIGHTS,
   endings: ENDINGS,

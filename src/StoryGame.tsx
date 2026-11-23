@@ -13,6 +13,7 @@ import {
   newRun,
   pickEnding,
   pickEpilogues,
+  recapLines,
   setSoupStateFor,
   soupStateFor,
   type RunState,
@@ -34,6 +35,8 @@ export function StoryGame({ story, onLeave }: { story: Story; onLeave: () => voi
   const [saved] = useState(() => loadRun(story));
   const [run, setRun] = useState<RunState | null>(null);
   const [notebook, setNotebook] = useState(false);
+  // 繼續舊存檔時，先播一段前情提要
+  const [recap, setRecap] = useState<Line[] | null>(null);
   const [mute, setMute] = useState(isMuted);
   const big = useMemo(() => bigSoupOf(story.nights), [story]);
   const { voice, nights } = story;
@@ -49,7 +52,11 @@ export function StoryGame({ story, onLeave }: { story: Story; onLeave: () => voi
   }, [ambience, mute]);
   useEffect(() => () => setAmbience(null), []);
 
-  if (!run) return <StoryTitle story={story} hasSave={!!saved} onContinue={() => setRun(saved)} onNew={() => setRun(newRun())} onLeave={onLeave} />;
+  if (!run) return <StoryTitle story={story} hasSave={!!saved} onContinue={() => {
+          setRun(saved);
+          const lines = saved ? recapLines(saved, nights, voice.unit) : [];
+          if (lines.length) setRecap(lines);
+        }} onNew={() => setRun(newRun())} onLeave={onLeave} />;
 
   const night = currentNight(run, nights);
   // 假結局的時候，頂欄跟真的結局一樣，不顯示第幾夜
@@ -94,7 +101,9 @@ export function StoryGame({ story, onLeave }: { story: Story; onLeave: () => voi
       </header>
 
       <main className="stage">
-        {run.phase === 'end' || !night ? (
+        {recap ? (
+          <Dialogue key="recap" heading="前情提要" lines={recap} doneLabel={voice.resume} onDone={() => setRecap(null)} />
+        ) : run.phase === 'end' || !night ? (
           <EndingView story={story} run={run} onRestart={restart} onLeave={onLeave} />
         ) : run.phase === 'intro' ? (
           <Dialogue key={`intro-${night.n}`} heading={night.title} lines={night.intro} doneLabel={night.soup ? voice.begin : '繼續'} onDone={() => setRun(finishIntro(run, nights))} />
